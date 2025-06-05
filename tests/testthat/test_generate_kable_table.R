@@ -3,7 +3,7 @@ library(dplyr)
 library(kableExtra)
 library(knitr)
 
-source("www/funs.R")
+source("../../www/funs.R")
 
 test_that("generateKableTable handles empty data frame", {
   out <- generateKableTable(data.frame(), format = "html")
@@ -18,6 +18,6 @@ test_that("generateKableTable formats Pass/Fail correctly", {
                    PassFail = c("PASS", "FAIL"))
   out <- generateKableTable(df, format = "html")
   output_str <- paste(out, collapse = "")
-  expect_true(grepl("#28a745", output_str))
-  expect_true(grepl("#dc3545", output_str))
+  expect_true(grepl("rgba\\(40, 167, 69", output_str))
+  expect_true(grepl("rgba\\(220, 53, 69", output_str))
 })
