@@ -1,0 +1,169 @@
+---
+title: "CHOP Coagulation Method Comparison & Bias Estimation"
+date: '`r Sys.Date()`'
+output: 
+  pdf_document:
+    latex_engine: pdflatex
+    includes:
+      in_header: header.tex
+header-includes:
+  - \usepackage[table]{xcolor}
+  - \usepackage{float}  # Include the float package
+  - \definecolor{passGreen}{RGB}{34, 139, 34}
+  - \definecolor{failRed}{RGB}{205, 92, 92}
+params:
+  tabledata: "currentData"
+  data: "final_data"
+  m1: "old"
+  m2: "new"
+  syx: 1
+  regmodel: "LinReg"
+  cimethod: "analytical"
+  metbootci: 'BCa'
+  batype: 3
+  ciarea: TRUE
+  legend: TRUE
+  identity: TRUE
+  addcor: TRUE
+  cormet: 'pearson'
+  name: ''
+  test: ''
+  reagentLot: ''
+  expiration: ''
+  date: ''
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, results='asis')
+```
+
+### Test Information
+
+```{r}
+library(knitr)
+library(kableExtra)
+
+# Assuming params contains test, reagentLot, expiration, date
+df_test_long <- data.frame(
+  Parameter = c("Test", "Reagent Lot", "Expiration", "Date"),
+  Value = c(params$test, params$reagentLot, params$expiration, params$date)
+)
+
+# For HTML output
+if(knitr::is_html_output()) {
+  kable(df_test_long, "html", align = 'c') %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                  full_width = F, position = "center")
+}
+
+# For PDF output
+if(knitr::is_latex_output()) {
+  kable(df_test_long, "latex", booktabs = TRUE, align = 'c') %>%
+    kable_styling(latex_options = c("striped", "HOLD_position"))
+  
+}
+```
+
+
+
+```{r dataframe, comment = '', echo=FALSE, warning = FALSE, message = FALSE,  results='asis'}
+library(mcr)
+library(pander)
+df <- params$tabledata
+
+if(knitr::is_html_output()) {
+      tableHTML <- generateKableTable(df, "html")
+     cat(tableHTML)# <- generateKableTable(df, "html")
+}
+
+if(knitr::is_latex_output()) {
+  tablePDF <- generateKableTable(df, "latex")
+  tablePDF%>%
+    kable_styling(latex_options = c("HOLD_position"))
+}
+
+  
+
+```
+
+
+```{r regression plot, echo = FALSE, results = 'markup', fig.show = 'asis', message = FALSE}
+library(mcr)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1<- mcreg(a$M1, a$M2, error.ratio = params$syx, 
+method.reg = params$regmodel, method.ci = params$cimethod,
+method.bootstrap.ci = params$metbootci, slope.measure = "radian", na.rm = TRUE)
+MCResult.plot(data1, ci.area = params$ciarea, 
+add.legend = params$legend, identity = params$identity,
+add.cor = params$addcor, x.lab = params$m1,
+y.lab = params$m2, cor.method = params$cormet, 
+equal.axis = TRUE, add.grid = TRUE)
+}
+```
+
+
+```{r statistics, echo = FALSE, comment = '', warning = FALSE, message = FALSE}
+library(mcr)
+library(pander)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1 <- mcreg(a$M1, a$M2, error.ratio = params$syx, 
+method.reg = params$regmodel, method.ci = params$cimethod,
+method.bootstrap.ci = params$metbootci, slope.measure = "radian",
+mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+pander(getCoefficients(data1), caption = "Estimate (EST), standard error (SE) and upper-lower confidence interval (UCI-LCI) for intercept and slope", style = "grid")
+}
+```
+
+
+```{r coef plot, echo = FALSE, comment = '', warning = FALSE, message = FALSE}
+library(mcr)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1 <- mcreg(a$M1, a$M2, error.ratio = params$syx, 
+method.reg = params$regmodel, method.ci = params$cimethod,
+method.bootstrap.ci = params$metbootci, slope.measure = "radian",
+mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+compareFit(data1)
+}
+```
+
+
+```{r BA plot, echo=FALSE, results = 'markup'}
+library(mcr)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1 <- mcreg(a$M1, a$M2,
+mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+MCResult.plotDifference(data1, plot.type = params$batype, add.grid = TRUE)
+MCResult.plotDifference(data1, plot.type = 4, add.grid = TRUE) # Hard code want percent BA
+}
+```
+
+
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
+```
+
+
+#### Data is processed using R language^1^, shiny web application framework^2^ and mcr package^3^. Shinydashboard^4^, rhandsontable^5^ and pander^6^ are used for website construction. Rmarkdown^7^ is used for converting results into PDF and HTML files.
+
+##### References and packages:
+
+1. R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. Version: `r getRversion()` URL: https://www.R-project.org
+2. shiny: Web Application Framework for R. Version `r packageDescription("shiny")$Version` URL: http://CRAN.R-project.org/package=shiny
+3. mcr: Method Comparison Regression. Version: `r packageDescription("mcr")$Version` URL: http://CRAN.R-project.org/package=mcr
+4. shinydashboard: Create Dashboards with 'Shiny'. Version: `r packageDescription("shinydashboard")$Version` URL: http://rstudio.github.io/shinydashboard
+5. rhandsontable: Interface to the 'Handsontable.js' Library. Version: `r packageDescription("rhandsontable")$Version` URL: http://jrowen.github.io/rhandsontable
+6. pander: An R Pandoc Writer. Version: `r packageDescription("pander")$Version` URL: http://rapporter.github.io/pander
+7. rmarkdown: Dynamic Documents for R. Version: `r packageDescription("rmarkdown")$Version` URL: http://rmarkdown.rstudio.com
