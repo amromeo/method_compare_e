@@ -8,6 +8,7 @@ tabItem_data <- function() {
                                       "Factors - 15%" = "Factors",
                                       "Anti-Xa Parameter - 20%" = "AntiXa",
                                       "DTIBI Parameter - 20%" = "DTIBI",
+                                      "APTT - 20%" = "APTT",
                                       "Special Coag Testing - 15%" = "SpecialCoag")),
               # Adding new inputs within the same box
               textInput('testInput', label = 'Test:'),

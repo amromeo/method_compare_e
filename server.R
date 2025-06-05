@@ -40,6 +40,7 @@ shinyServer(function(input, output, session) {
                                       "Factors" = 0.15,
                                       "AntiXa" = 0.20,
                                       "DTIBI" = 0.20,
+                                      "APTT" = 0.20,
                                       "SpecialCoag" = 0.15
       )) # Retrieve the user-defined limit value
       
@@ -76,6 +77,7 @@ shinyServer(function(input, output, session) {
                             "Factors" = "Factors - 15%",
                             "AntiXa" = "Anti-Xa Parameter - 20%",
                             "DTIBI" = "DTIBI Parameter - 20%",
+                            "APTT" = "APTT - 20%",
                             "SpecialCoag" = "Special Coag Testing - 15%"
     )
     
