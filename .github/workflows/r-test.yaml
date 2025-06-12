@@ -18,6 +18,7 @@ jobs:
           install.packages(c(
             "shiny",
             "mcr",
+            "kableExtra",
             "shinydashboard",
             "rhandsontable",
             "dplyr",
