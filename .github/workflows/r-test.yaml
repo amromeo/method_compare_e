@@ -24,6 +24,8 @@ jobs:
             "rmarkdown",
             "readxl",
             "scales",
+            "systemfonts", 
+            "textshaping",
             "svglite",
             "kableExtra",
             "pander",
