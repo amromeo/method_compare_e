@@ -18,11 +18,15 @@ jobs:
           install.packages(c(
             "shiny",
             "mcr",
-            "kableExtra",
             "shinydashboard",
             "rhandsontable",
             "dplyr",
-            "rmarkdown"
+            "rmarkdown",
+            "readxl",
+            "scales",
+            "kableExtra",
+            "pander",
+            "testthat"
           ), repos = "https://cloud.r-project.org")
         shell: Rscript {0}
 
