@@ -24,6 +24,7 @@ jobs:
             "rmarkdown",
             "readxl",
             "scales",
+            "svglite",
             "kableExtra",
             "pander",
             "testthat"
