@@ -16,7 +16,9 @@ tabItem_data <- function() {
               textInput('expirationInput', label = 'Expiration:'),
               dateInput('dateInput', label = 'Date:', value = Sys.Date()),
               checkboxGroupInput('comparisons', 'Comparisons',
-                                 choices = c('old-new', 'mil1-mil2', 'mil1-mil3', 'mil2-mil3'))
+                                 choices = c('old-new', 'mil1-mil2', 'mil1-mil3', 'mil2-mil3')),
+              actionButton('save_state', 'Save state'),
+              selectInput('load_state', 'Load state', choices = NULL)
           ),
           fluidRow(
             column(9,
