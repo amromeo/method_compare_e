@@ -35,6 +35,5 @@ tabItem_info <- function(){
            a('http://rmarkdown.rstudio.com',
              href = "http://rmarkdown.rstudio.com")),
         br(),
-        h4('For any questions or concerns please contact:', 
-           a("Burak Bahar, MD", href = "mailto:burakbaharmd@gmail.com"))
+        h4('This app is based on the Method Comparison app developed by Burak Bahar')
 )}
