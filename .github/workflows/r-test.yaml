@@ -14,12 +14,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages('devtools')
-          devtools::install_deps(dependencies = TRUE)
+          install.packages(c('dplyr', 'kableExtra', 'knitr', 'testthat'))
         shell: Rscript {0}
 
       - name: Run tests
         run: |
-          install.packages('testthat')
           testthat::test_dir("tests/testthat")
         shell: Rscript {0}
