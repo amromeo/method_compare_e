@@ -1,3 +1,3 @@
 # method compare
 
-Amazing method comparison based on work of Burak Bahar
+Amazing method comparison based on work of Burak Bahar.
