@@ -24,9 +24,20 @@ shinyServer(function(input, output, session) {
 
 board <- board_connect()
 
-  observe({
-    updateSelectInput(session, "load_state", choices = pin_list(board)$name)
-  })
+observe({
+  pins <- try(pin_list(board), silent = TRUE)
+  
+  if (inherits(pins, "try-error") || length(pins) == 0) {
+    choices <- character(0)
+  } else if (is.data.frame(pins) && "name" %in% names(pins)) {
+    choices <- pins$name
+  } else {
+    choices <- pins
+  }
+
+  updateSelectInput(session, "load_state", choices = choices)
+})
+
 
   observeEvent(input$save_state, {
     state <- list(
