@@ -45,7 +45,7 @@ observe({
       vals = list(final_data = vals$final_data, hot_data = vals$hot_data)
     )
     name <- paste0("state_", format(Sys.time(), "%Y%m%d_%H%M%S"))
-    pin_write(board, state, name)
+    pin_write(board, state, name = name, type = "rds")
     updateSelectInput(session, "load_state", choices = pin_list(board)$name)
   })
 
