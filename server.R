@@ -203,10 +203,14 @@ observe({
 
 
   output$hot <- renderRHandsontable({
-    a <- vals$final_data 
-    rhandsontable(a
-                  , height = 482
-                  , rowHeaders = NULL) %>%
+    a <- vals$final_data
+    if (is.null(a) || !is.data.frame(a) || ncol(a) < 3) {
+      shiny::showNotification("Invalid table data", type = "error")
+      return(NULL)
+    }
+    rhandsontable(a,
+                  height = 482,
+                  rowHeaders = NULL) %>%
       hot_col(col = colnames(a)[1]) %>%
       hot_col(col = colnames(a)[2], format = '0.00', type = 'numeric') %>%
       hot_col(col = colnames(a)[3], format = '0.00', type = 'numeric') %>%
