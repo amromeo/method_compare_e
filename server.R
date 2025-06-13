@@ -11,16 +11,70 @@ shinyServer(function(input, output, session) {
                                                'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
                                                'Pass_Fail'= rep(NA_character_, 10),
                                                'Limit_per' = rep(TRUE,10)
-                                               ), 
-                         final_data = data.frame('Sample'= rep(NA_character_, 10),
-                                                 'X'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Y'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Abs_Diff'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Pass_Fail'= rep(NA_character_, 10),
-                                                 'Limit_per' = rep(.15,10)
-                                                 )
-                         )
+                                               ),
+                        final_data = data.frame('Sample'= rep(NA_character_, 10),
+                                                'X'= round(c(rep(NA, 10)), digits = 2),
+                                                'Y'= round(c(rep(NA, 10)), digits = 2),
+                                                'Abs_Diff'= round(c(rep(NA, 10)), digits = 2),
+                                                'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
+                                                'Pass_Fail'= rep(NA_character_, 10),
+                                                'Limit_per' = rep(.15,10)
+                                                )
+                        )
+
+board <- board_connect()
+
+observe({
+  pins <- try(pin_list(board), silent = TRUE)
+  
+  if (inherits(pins, "try-error") || length(pins) == 0) {
+    choices <- character(0)
+  } else if (is.data.frame(pins) && "name" %in% names(pins)) {
+    choices <- pins$name
+  } else {
+    choices <- pins
+  }
+
+  updateSelectInput(session, "load_state", choices = choices)
+})
+
+
+  observeEvent(input$save_state, {
+    state <- list(
+      inputs = reactiveValuesToList(input),
+      vals = list(final_data = vals$final_data, hot_data = vals$hot_data)
+    )
+    name <- paste0("state_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+    pin_write(board, state, name = name, type = "rds")
+    updateSelectInput(session, "load_state", choices = pin_list(board)$name)
+  })
+
+  observeEvent(input$load_state, {
+    req(input$load_state)
+    state <- pin_read(board, input$load_state)
+    for(n in names(state$inputs)) {
+      val <- state$inputs[[n]]
+      if(!is.null(input[[n]])) {
+        if(inherits(val, "Date")) {
+          updateDateInput(session, n, value = val)
+        } else if(is.numeric(val) && length(val) == 1) {
+          updateNumericInput(session, n, value = val)
+        } else if(is.logical(val) && length(val) == 1) {
+          updateCheckboxInput(session, n, value = val)
+        } else if(is.character(val) && length(val) == 1) {
+          if(n %in% c("format", "regmodel", "cimethod", "metbootci", "batype", "limitPerInput", "cormet")) {
+            updateSelectInput(session, n, selected = val)
+          } else {
+            updateTextInput(session, n, value = val)
+          }
+        } else if(is.character(val) && length(val) > 1) {
+          updateCheckboxGroupInput(session, n, selected = val)
+        }
+      }
+    }
+    vals$final_data <- state$vals$final_data
+    vals$hot_data <- state$vals$hot_data
+  })
   
   observe({
     # This will trigger the code inside whenever `input$hot` or `input$limitPerInput` changes.
