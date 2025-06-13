@@ -22,11 +22,7 @@ shinyServer(function(input, output, session) {
                                                 )
                         )
 
-  board_register_rsconnect(
-    key = Sys.getenv("RSCONNECT_API"),
-    server = "https://rstudio-connect.chop.edu"
-  )
-  board <- board_rsconnect()
+board <- board_connect()
 
   observe({
     updateSelectInput(session, "load_state", choices = pin_list(board)$name)
