@@ -3,10 +3,10 @@ tabItem_data <- function() {
           # Consolidated box for all inputs at the top
           box(title = "Settings", status = "primary", solidHeader = TRUE, width = 12,
               selectInput("testInput", "Select Test", 
-                          choices = c("QFA", "Ddimer", "AntiXa", "DTIBI", "APTT", "PT","Thrombin Time", "Protein C", "Protein S", "ADAMTS13 activity","sC5B9",
+                          choices = c("QFA", "Ddimer", "AntiXa", "DTIBI", "APTT", "PT","Thrombin Time", "Protein C", "Protein S","Protein S Free", "ADAMTS13 activity","sC5B9",
                                           "Factor II (Prothrombin)", "Factor V", "Factor VII", "Factor VIII",
                                           "Factor VIII Chromogenic", "Factor VIII Inhibitor", "Chromogenic Factor VIII Inhibitor",
-                                          "Factor IX", "Factor IX Inhibitor", "Factor X", "Factor XI", "Factor XII", "Factor XIII",
+                                          "Factor IX", "Factor IX Inhibitor", "Factor X", "Factor XI", "Factor XII", "Factor XIII", "vWF Activity" , "vWF Antigen",
                                           "Other")),
               conditionalPanel(
                 condition = "input.testInput == 'Other'",

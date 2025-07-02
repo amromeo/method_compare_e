@@ -12,7 +12,7 @@ tabItem_subitem2 <- function(){
                                        'Weighted Deming' = 'WDeming',
                                        'Passing-Bablok' = 'PaBa',
                                        'Passing-Bablok Large Dataset' = 'PaBaLarge'),
-                        selected = "Deming"
+                        selected = "PaBa"
                           ),
               fixedRow(
                 column(6,

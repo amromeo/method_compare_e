@@ -24,9 +24,12 @@ shinyServer(function(input, output, session) {
     DTIBI = 0.20,
     APTT = 0.20,
     PT = 0.20,
+    "vWF Antigen" = 0.20,
+    "vWF Activity" = 0.20,
     "Thrombin Time" = 0.20,
     "Protein C" = 0.20,
     "Protein S" = 0.20,
+    "Protein S Free" = 0.20,
     "ADAMTS13 activity" = 0.20,
     sC5B9 = 0.20,
     "Factor II (Prothrombin)" = 0.15,
@@ -389,9 +392,13 @@ shinyServer(function(input, output, session) {
 
     
     filename = function() {
+      req(input$format, test_name())
       m <- method_names()
-      paste0(safe_filename(m$m1), "_vs_", safe_filename(m$m2), "_", Sys.Date(), ".", 
-             tolower(input$format))
+      paste0(
+        safe_filename(test_name()), "_",
+        safe_filename(m$m1), "_vs_", safe_filename(m$m2), "_",
+        Sys.Date(), ".", tolower(input$format)
+      )
     },
     content = function(file) {
       currentData <- mod_data()
