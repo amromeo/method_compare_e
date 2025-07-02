@@ -10,7 +10,6 @@ tabItem_moddata <- function() {
                                 solidHeader = TRUE,
                                 collapsible = TRUE,
                                 width = 12,
-                                htmlOutput("dynamicTest"),
                                 htmlOutput("dynamicLimitPer") ,
                                 htmlOutput("dynamicReagentLot"),
                                 htmlOutput("dynamicExpiration"),

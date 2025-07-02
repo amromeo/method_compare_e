@@ -1,0 +1,974 @@
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/global.R ###
+library(shiny)
+library(mcr)
+library(shinydashboard)
+library(rhandsontable)
+library(dplyr)
+library(rmarkdown)
+library(readxl)
+library(scales)
+library(kableExtra)
+library(pander)
+source("www/tabitem_info.R")
+source("www/tabitem_data.R")
+source("www/tabitem_moddata.R")
+source("www/funs.R")
+source("www/tabitem_stats.R")
+source("www/tabitem_download.R")
+source("www/tabitem_subitem1.R")
+source("www/tabitem_subitem2.R")
+source("www/tabitem_subitem3.R")
+source("www/tabitem_subitem4.R")
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/method_compare.Rproj ###
+Version: 1.0
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/README.md ###
+# method compare
+
+Amazing method comparison based on work of Burak Bahar.
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/report.Rmd ###
+---
+title: "CHOP Coagulation Method Comparison & Bias Estimation"
+date: '`r Sys.Date()`'
+output: 
+  pdf_document:
+    latex_engine: pdflatex
+    includes:
+      in_header: header.tex
+header-includes:
+  - \usepackage[table]{xcolor}
+  - \usepackage{float}  # Include the float package
+  - \definecolor{passGreen}{RGB}{34, 139, 34}
+  - \definecolor{failRed}{RGB}{205, 92, 92}
+params:
+  tabledata: "currentData"
+  data: "final_data"
+  m1: "old"
+  m2: "new"
+  syx: 1
+  regmodel: "LinReg"
+  cimethod: "analytical"
+  metbootci: 'BCa'
+  batype: 3
+  ciarea: TRUE
+  legend: TRUE
+  identity: TRUE
+  addcor: TRUE
+  cormet: 'pearson'
+  name: ''
+  test: ''
+  limit: 0.15
+  reagentLot: ''
+  expiration: ''
+  date: ''
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, results='asis')
+```
+
+### Test Information
+
+```{r}
+library(knitr)
+library(kableExtra)
+
+# Assuming params contains test, reagentLot, expiration, date
+df_test_long <- data.frame(
+  Parameter = c("Test", "Reagent Lot", "Expiration", "Date", "Limit (%)"),
+  Value = c(params$test, params$reagentLot, params$expiration, params$date, percent(params$limit, accuracy = 0.1))
+)
+
+# For HTML output
+if(knitr::is_html_output()) {
+  kable(df_test_long, "html", align = 'c') %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), 
+                  full_width = F, position = "center")
+}
+
+# For PDF output
+if(knitr::is_latex_output()) {
+  kable(df_test_long, "latex", booktabs = TRUE, align = 'c') %>%
+    kable_styling(latex_options = c("striped", "HOLD_position"))
+  
+}
+```
+
+
+
+```{r dataframe, comment = '', echo=FALSE, warning = FALSE, message = FALSE,  results='asis'}
+library(mcr)
+library(pander)
+df <- params$tabledata
+
+if(knitr::is_html_output()) {
+      tableHTML <- generateKableTable(df, "html")
+     cat(tableHTML)# <- generateKableTable(df, "html")
+}
+
+if(knitr::is_latex_output()) {
+  tablePDF <- generateKableTable(df, "latex")
+  tablePDF%>%
+    kable_styling(latex_options = c("HOLD_position"))
+}
+
+  
+
+```
+
+
+```{r regression plot, echo = FALSE, results = 'markup', fig.show = 'asis', message = FALSE}
+library(mcr)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1<- mcreg(a$M1, a$M2, error.ratio = params$syx, 
+method.reg = params$regmodel, method.ci = params$cimethod,
+method.bootstrap.ci = params$metbootci, slope.measure = "radian", na.rm = TRUE)
+MCResult.plot(data1, ci.area = params$ciarea, 
+add.legend = params$legend, identity = params$identity,
+add.cor = params$addcor, x.lab = params$m1,
+y.lab = params$m2, cor.method = params$cormet, 
+equal.axis = TRUE, add.grid = TRUE)
+}
+```
+
+
+```{r statistics, echo = FALSE, comment = '', warning = FALSE, message = FALSE}
+library(mcr)
+library(pander)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1 <- mcreg(a$M1, a$M2, error.ratio = params$syx, 
+method.reg = params$regmodel, method.ci = params$cimethod,
+method.bootstrap.ci = params$metbootci, slope.measure = "radian",
+mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+pander(getCoefficients(data1), caption = "Estimate (EST), standard error (SE) and upper-lower confidence interval (UCI-LCI) for intercept and slope", style = "grid")
+}
+```
+
+
+```{r coef plot, echo = FALSE, comment = '', warning = FALSE, message = FALSE}
+library(mcr)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1 <- mcreg(a$M1, a$M2, error.ratio = params$syx, 
+method.reg = params$regmodel, method.ci = params$cimethod,
+method.bootstrap.ci = params$metbootci, slope.measure = "radian",
+mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+compareFit(data1)
+}
+```
+
+
+```{r BA plot, echo=FALSE, results = 'markup'}
+library(mcr)
+a <- params$data
+if (is.null(a)) {
+return(NULL)} else {
+names(a) <- c('Sample','M1', 'M2')
+data1 <- mcreg(a$M1, a$M2,
+mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+MCResult.plotDifference(data1, plot.type = params$batype, add.grid = TRUE)
+MCResult.plotDifference(data1, plot.type = 4, add.grid = TRUE) # Hard code want percent BA
+}
+```
+
+
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
+```
+
+
+#### Data is processed using R language^1^, shiny web application framework^2^ and mcr package^3^. Shinydashboard^4^, rhandsontable^5^ and pander^6^ are used for website construction. Rmarkdown^7^ is used for converting results into PDF and HTML files.
+
+##### References and packages:
+
+1. R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. Version: `r getRversion()` URL: https://www.R-project.org
+2. shiny: Web Application Framework for R. Version `r packageDescription("shiny")$Version` URL: http://CRAN.R-project.org/package=shiny
+3. mcr: Method Comparison Regression. Version: `r packageDescription("mcr")$Version` URL: http://CRAN.R-project.org/package=mcr
+4. shinydashboard: Create Dashboards with 'Shiny'. Version: `r packageDescription("shinydashboard")$Version` URL: http://rstudio.github.io/shinydashboard
+5. rhandsontable: Interface to the 'Handsontable.js' Library. Version: `r packageDescription("rhandsontable")$Version` URL: http://jrowen.github.io/rhandsontable
+6. pander: An R Pandoc Writer. Version: `r packageDescription("pander")$Version` URL: http://rapporter.github.io/pander
+7. rmarkdown: Dynamic Documents for R. Version: `r packageDescription("rmarkdown")$Version` URL: http://rmarkdown.rstudio.com
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/server.R ###
+
+
+
+shinyServer(function(input, output, session) {
+  
+  observeEvent(input$debug_button, {
+    print(reactiveValuesToList(input))
+  })
+  
+  input_snapshot <- reactiveVal()
+  
+  observeEvent(input$debug_button, {
+    input_snapshot(reactiveValuesToList(input))
+  })
+  
+  output$snapshot_text <- renderPrint({
+    input_snapshot()
+  })
+  
+  default_limits <- c(
+    QFA = 0.20,
+    Ddimer = 0.24,
+    Factors = 0.15,
+    AntiXa = 0.20,
+    DTIBI = 0.20,
+    APTT = 0.20,
+    SpecialCoag = 0.15
+  )
+  
+  observeEvent(input$testInput, {
+    req(input$testInput)
+    if (input$testInput %in% names(default_limits)) {
+      updateNumericInput(session, "limitValue", value = default_limits[[input$testInput]])
+    }
+  })
+  
+  
+  
+  output$limitValueUI <- renderUI({
+    req(input$testInput)
+    init_limit <- default_limits[[input$testInput]]
+    numericInput("limitValue", "Set % Cutoff", 
+                 value = ifelse(is.null(init_limit), 0.15, init_limit), 
+                 min = 0, max = 1, step = 0.01)
+  })
+  
+  
+  observeEvent(input$restore_button, {
+    snapshot <- input_snapshot()
+    if (is.null(snapshot)) return()
+    
+    # Standard inputs
+    if (!is.null(snapshot$limitValue)) updateNumericInput(session, "limitValue", value = snapshot$limitValue)
+#   if (!is.null(snapshot$limitPerInput)) updateSelectInput(session, "limitPerInput", selected = snapshot$limitPerInput)
+    if (!is.null(snapshot$batype)) updateSelectInput(session, "batype", selected = snapshot$batype)
+    if (!is.null(snapshot$regmodel)) updateSelectInput(session, "regmodel", selected = snapshot$regmodel)
+    if (!is.null(snapshot$cimethod)) updateSelectInput(session, "cimethod", selected = snapshot$cimethod)
+    if (!is.null(snapshot$metbootci)) updateSelectInput(session, "metbootci", selected = snapshot$metbootci)
+    if (!is.null(snapshot$cormet)) updateSelectInput(session, "cormet", selected = snapshot$cormet)
+    if (!is.null(snapshot$dateInput)) updateDateInput(session, "dateInput", value = snapshot$dateInput)
+    if (!is.null(snapshot$format)) updateSelectInput(session, "format", selected = snapshot$format)
+    
+    if (!is.null(snapshot$identity)) updateCheckboxInput(session, "identity", value = snapshot$identity)
+    if (!is.null(snapshot$ciarea)) updateCheckboxInput(session, "ciarea", value = snapshot$ciarea)
+    if (!is.null(snapshot$legend)) updateCheckboxInput(session, "legend", value = snapshot$legend)
+    if (!is.null(snapshot$addcor)) updateCheckboxInput(session, "addcor", value = snapshot$addcor)
+    
+    if (!is.null(snapshot$syx)) updateNumericInput(session, "syx", value = snapshot$syx)
+    if (!is.null(snapshot$testInput)) updateTextInput(session, "testInput", value = snapshot$testInput)
+    if (!is.null(snapshot$reagentLotInput)) updateTextInput(session, "reagentLotInput", value = snapshot$reagentLotInput)
+    if (!is.null(snapshot$expirationInput)) updateTextInput(session, "expirationInput", value = snapshot$expirationInput)
+    
+    # HOT table
+    # HOT table
+    if (!is.null(snapshot$hot$params$data)) {
+      raw_data <- snapshot$hot$params$data
+      
+      rows <- lapply(raw_data, function(row) {
+        clean_row <- lapply(row, function(x) if (is.null(x)) NA else x)
+        unlist(clean_row, use.names = FALSE)
+      })
+      
+      rows <- Filter(function(r) length(r) == 7, rows)
+      
+      if (length(rows) > 0) {
+        df <- do.call(rbind, rows)
+        df <- as.data.frame(df, stringsAsFactors = FALSE)
+        colnames(df) <- c("Sample", "X", "Y", "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")
+        
+        df$X <- as.numeric(df$X)
+        df$Y <- as.numeric(df$Y)
+        df$Abs_Diff <- as.numeric(df$Abs_Diff)
+        df$Per_Diff <- as.numeric(df$Per_Diff)
+        df$Limit_per <- as.numeric(df$Limit_per)
+        
+        vals$final_data <- df
+      } else {
+        showNotification("No valid HOT rows after cleanup", type = "warning")
+      }
+    }
+    
+    
+    
+    
+  })
+  
+  
+  vals <- reactiveValues(hot_data = data.frame('Sample'= rep(NA_character_, 10),
+                                               'X'= round(c(rep(NA, 10)), digits = 2),
+                                               'Y'= round(c(rep(NA, 10)), digits = 2),
+                                               'Abs_Diff'= round(c(rep(NA, 10)), digits = 2),
+                                               'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
+                                               'Pass_Fail'= rep(NA_character_, 10),
+                                               'Limit_per' = rep(TRUE,10)
+                                               ), 
+                         final_data = data.frame('Sample'= rep(NA_character_, 10),
+                                                 'X'= round(c(rep(NA, 10)), digits = 2),
+                                                 'Y'= round(c(rep(NA, 10)), digits = 2),
+                                                 'Abs_Diff'= round(c(rep(NA, 10)), digits = 2),
+                                                 'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
+                                                 'Pass_Fail'= rep(NA_character_, 10),
+                                                 'Limit_per' = rep(.15,10)
+                                                 )
+                         )
+  observe({
+    req(input$hot)
+    req(input$limitValue) 
+    df <- hot_to_r(input$hot)
+    
+    if (is.null(df) || nrow(df) == 0) return()
+    if (!all(c("X", "Y") %in% names(df))) return()
+    if (!is.numeric(df$X) || !is.numeric(df$Y)) return()
+    
+    df$Abs_Diff <- df$Y - df$X
+    df$Per_Diff <- df$Abs_Diff / df$X
+    limit_value <- input$limitValue
+    
+    df$Per_Diff <- suppressWarnings(as.numeric(df$Per_Diff))  # Converts characters to numeric, gives NA if not valid
+    if (length(df$Per_Diff) == 0 || length(df$Per_Diff) != nrow(df)) {
+      df$Pass_Fail <- rep("", nrow(df))
+    } else {
+      print("DEBUG: Per_Diff content")
+      print(df$Per_Diff)
+      print("DEBUG: limit_value")
+      print(limit_value)
+      print("DEBUG: abs(Per_Diff) <= limit_value")
+      print(abs(df$Per_Diff) <= limit_value)
+      
+      # Fallback default if comparison fails
+      logic_check <- abs(df$Per_Diff) <= limit_value
+      if (length(logic_check) != nrow(df)) {
+        logic_check <- rep(NA, nrow(df))
+      }
+      
+      df$Pass_Fail <- dplyr::case_when(
+        is.na(df$Per_Diff) ~ "",
+        logic_check ~ "PASS",
+        TRUE ~ "FAIL"
+      )
+      
+    }
+    
+    df$Limit_per <- limit_value
+    vals$final_data <- df
+  })
+  
+  
+  output$dynamicTest <- renderUI({
+    HTML(paste("<p><strong>Test:</strong>", ifelse(is.null(input$testInput), "Not entered", input$testInput), "</p>"))
+  })
+  
+  output$dynamicReagentLot <- renderUI({
+    HTML(paste("<p><strong>Reagent Lot:</strong>", ifelse(is.null(input$reagentLotInput), "Not entered", input$reagentLotInput), "</p>"))
+  })
+  
+  output$dynamicExpiration <- renderUI({
+    HTML(paste("<p><strong>Expiration:</strong>", ifelse(is.null(input$expirationInput), "Not entered", input$expirationInput), "</p>"))
+  })
+  
+  output$dynamicLimitPer <- renderUI({
+    selected_test <- input$testInput
+    selected_cutoff <- input$limitValue
+    HTML(paste("<p><strong>Selected Test:</strong>", selected_test, "</p>",
+               "<p><strong>Limit (%):</strong>", percent(selected_cutoff, accuracy = 0.1), "</p>"))
+  })
+  
+  
+  output$dynamicDate <- renderUI({
+    # Ensure input$dateInput is a Date object before formatting
+    formattedDate <- if(!is.null(input$dateInput) && inherits(input$dateInput, "Date")) {
+      format(input$dateInput, "%Y-%m-%d")
+    } else {
+      "Not entered"
+    }
+    HTML(paste("<p><strong>Date:</strong>", formattedDate, "</p>"))
+  })
+  
+  
+  
+  datasetInput <- eventReactive(vals$hot_data,{
+    vals$hot_data
+  })
+  
+  mod_data <- reactive({
+    df <- vals$final_data
+
+    # Filter out rows where columns 1, 2, and 3 are all empty
+    df <- df %>% 
+      filter(!is.na(X) & !is.na(Y))
+
+    
+    if (nrow(df) == 0) {
+      # No data entered, show a user-friendly error message
+      shiny::showNotification("Please enter data into the table.", type = "error")
+      return(data.frame())  # Return an empty data frame
+    }
+    
+    summary_stats <- data.frame(matrix(ncol = ncol(df), nrow = 1)) # Create a data frame for summary stats
+    colnames(summary_stats) <- colnames(df)
+   
+    
+    # Assuming 4th and 5th columns are numeric and we're calculating their mean
+    summary_stats[1, 4] <- mean(df[[4]], na.rm = TRUE)
+    summary_stats[1, 5] <- mean(df[[5]], na.rm = TRUE)
+    summary_stats[1, 1] <- "SUMMARY"
+    
+    # Append summary statistics row to df
+    df <- rbind(df, summary_stats)
+    
+    df <- df%>%
+      mutate(
+        Per_Diff = percent(Per_Diff, accuracy = 0.1),
+        Limit_per =percent(Limit_per, accuracy = 0.1)
+      ) %>%
+      mutate(across(everything(), ~ifelse(is.na(.), "", .)))
+    
+    colnames(df) <- c(
+    'Sample',
+    'X',
+    'Y',
+    'AbsDiff',
+    'PerDiff',
+    'PassFail',
+    'Limitper')
+    
+    return(df)
+  })
+  
+
+  output$kableTable <- renderText({
+    df <- mod_data()  
+    tableHTML<-generateKableTable(df, format = "html") 
+    tableHTML
+    
+  })
+    
+
+
+  output$hot <- renderRHandsontable({
+    a <- vals$final_data 
+    rhandsontable(a
+                  , height = 482
+                  , rowHeaders = NULL) %>%
+      hot_col(col = colnames(a)[1]) %>%
+      hot_col(col = colnames(a)[2], format = '0.00', type = 'numeric') %>%
+      hot_col(col = colnames(a)[3], format = '0.00', type = 'numeric') %>%
+      hot_cols(colWidths = ifelse(!names(a) %in% c('Abs_Diff', 'Per_Diff', 'Pass_Fail','Limit_per') == T, 150, 0.1))
+
+    
+  })
+  
+  
+  
+  output$plot1 <- renderPlot({
+    
+    a <- vals$final_data
+    if (is.null(a)) {
+      return(NULL)} else {
+        names(a) <- c('Sample','M1', 'M2')
+        data1 <- try(mcreg(a$M1, a$M2,
+                       mref.name = input$m1, mtest.name = input$m2, 
+                       na.rm = TRUE), silent = TRUE)
+        try(MCResult.plotDifference(data1, plot.type = input$batype,
+                                add.grid = TRUE), silent = TRUE)
+        
+      }
+    
+  })
+  
+  output$plot2 <- renderPlot({
+    
+    a <- vals$final_data
+    if (is.null(a)) {
+      return(NULL)} else {
+        names(a) <- c('Sample','M1', 'M2')
+        data1 <- try(mcreg(a$M1, a$M2, error.ratio = input$syx, 
+                       method.reg = input$regmodel, method.ci = input$cimethod,
+                       method.bootstrap.ci = input$metbootci, 
+                       slope.measure = "radian", na.rm = TRUE), silent = TRUE)
+        try(MCResult.plot(data1, ci.area = input$ciarea,
+                      add.legend = input$legend, identity = input$identity,
+                      add.cor = input$addcor, x.lab = input$m1,
+                      y.lab = input$m2, cor.method = input$cormet,
+                      equal.axis = TRUE, add.grid = TRUE, 
+                      na.rm = TRUE), silent = TRUE)
+        
+      }
+    
+  })
+
+  output$plot3 <- renderPlot({
+    
+    a <- vals$final_data
+    if (is.null(a)) {
+      return(NULL)} else {
+        names(a) <- c('Sample','M1', 'M2')
+        data1 <- try(mcreg(a$M1, a$M2, error.ratio = input$syx, 
+                       method.reg = input$regmodel, method.ci = input$cimethod,
+                       method.bootstrap.ci = input$metbootci, slope.measure = "radian",
+                       mref.name = input$m1, mtest.name = input$m2, 
+                       na.rm = TRUE), silent = TRUE)
+        try(compareFit(data1), silent = TRUE)
+        
+      }
+    
+  })  
+  
+  
+  output$summary <- renderPrint({
+    
+    a <- vals$final_data
+    if (is.null(a)) {
+      return(NULL)} else {
+        names(a) <- c('Sample','M1', 'M2')
+        data1 <- try(mcreg(a$M1, a$M2, error.ratio = input$syx, 
+                       method.reg = input$regmodel, method.ci = input$cimethod,
+                       method.bootstrap.ci = input$metbootci, slope.measure = "radian",
+                       mref.name = input$m1, mtest.name = input$m2, 
+                       na.rm = TRUE), silent = TRUE)
+        try(printSummary(data1), silent = TRUE)
+      }
+    
+  })
+  
+
+  
+  output$downloadReport <- downloadHandler(
+    filename = function() {
+      # Construct the file name dynamically based on user input and date
+      paste0(input$m1, " vs. ", input$m2, " @ ", Sys.Date(), ".", 
+             switch(input$format, PDF = "pdf", HTML = "html", Word = "docx"))
+    },
+    content = function(file) {
+      currentData <- mod_data() 
+      # Define the parameters for the R Markdown document
+      params <- list(
+        tabledata = currentData,
+        data = vals$final_data,
+        m1 = input$m1,
+        m2 = input$m2,
+        syx = input$syx,
+        regmodel = input$regmodel,
+        cimethod = input$cimethod,
+        metbootci = input$metbootci,
+        batype = input$batype,
+        ciarea = input$ciarea,
+        legend = input$legend,
+        identity = input$identity,
+        addcor = input$addcor,
+        cormet = input$cormet,
+        name = input$name,
+        test = input$testInput,
+        limit = input$limitValue,
+        reagentLot = input$reagentLotInput,
+        expiration = input$expirationInput,
+        date = format(input$dateInput, "%Y-%m-%d")
+      )
+      
+      # Prepare the R Markdown file for rendering
+      tempReport <- file.path(tempdir(), "report.Rmd")
+      file.copy("report.Rmd", tempReport, overwrite = TRUE)
+      
+      # Render the R Markdown document to the appropriate format
+      rmarkdown::render(
+        input = tempReport, 
+        output_file = file,
+        params = params,
+        output_format = switch(
+          input$format,
+          PDF = rmarkdown::pdf_document(), 
+          HTML = rmarkdown::html_document(), 
+          Word = rmarkdown::word_document()
+        ),
+        envir = new.env(parent = globalenv())
+      )
+    }
+  )
+  
+})
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/tests/testthat.R ###
+library(testthat)
+library(kableExtra)
+test_dir("tests/testthat")
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/tests/testthat/test_generate_kable_table.R ###
+library(testthat)
+library(dplyr)
+library(kableExtra)
+library(knitr)
+
+source("../../www/funs.R")
+
+test_that("generateKableTable handles empty data frame", {
+  out <- generateKableTable(data.frame(), format = "html")
+  output_str <- paste(out, collapse = "")
+  expect_true(grepl("No data available", output_str))
+})
+
+test_that("generateKableTable formats Pass/Fail correctly", {
+  df <- data.frame(Sample = c("A", "B"),
+                   X = c(1.0, 1.0),
+                   Y = c(1.0, 2.0),
+                   PassFail = c("PASS", "FAIL"))
+  out <- generateKableTable(df, format = "html")
+  output_str <- paste(out, collapse = "")
+  expect_true(grepl("rgba\\(40, 167, 69", output_str))
+  expect_true(grepl("rgba\\(220, 53, 69", output_str))
+})
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/ui.R ###
+
+dashboardPage(
+  dashboardHeader(title = "CHOP Coagulation Lab Method Comparison Tool"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Data", tabName = "data", 
+               icon = icon("table", "fa-lg")
+               ),
+      menuItem("Excel View", tabName = "modData", icon = icon("dashboard")), # New tab for modified data
+      menuItem("Plots", tabName = "plots",
+               icon = icon("line-chart", "fa-lg"),
+               menuSubItem("Scatter Plot", tabName = "subitem2"),
+               menuSubItem("Coefficient Plot", tabName = "subitem3"),
+               menuSubItem("Bland-Altman Plot", tabName = "subitem1")
+               ),
+      menuItem("Statistics", tabName = "stats",
+               icon = icon("users", "fa-lg")
+               ),
+      menuItem("Download", tabName = "download",
+               icon = icon("download", "fa-lg")
+               ),
+      menuItem("Information", tabName = "info", 
+               icon = icon("info", "fa-lg")
+      ),
+      actionButton("debug_button", "Print Inputs"),
+      actionButton("restore_button", "Restore State"),
+      verbatimTextOutput("snapshot_text")
+      
+      
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem_info(),
+      tabItem_data(),
+      tabItem_moddata(),
+      tabItem_subitem1(),
+      tabItem_subitem2(),
+      tabItem_subitem3(),
+      tabItem_subitem4(),
+      tabItem_stats(),
+      tabItem_download()
+      )
+    )
+  )
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/funs.R ###
+generateKableTable <- function(df, format = "html") {
+  # Adjust format validation to include "latex" for PDF output
+  if (!format %in% c("html", "latex")) {
+    stop("Format must be either 'html' or 'latex'")
+  }
+  
+  # Check if the data frame is empty
+  if (nrow(df) == 0) {
+    return(knitr::kable(data.frame(Message = "No data available"), format = format))
+  }
+  
+  # Round specified columns to two decimal places using tidy syntax
+  # Round numeric columns (X, Y, AbsDiff) to two decimal places
+  df <- df %>%
+    mutate_if(is.numeric, round, 2)
+  
+  # Define the colors for HTML and LaTeX
+  colors_html <- list(pass = "#28a745", fail = "#dc3545")  # HEX color codes for HTML
+  colors_latex <- list(pass = "passGreen", fail = "failRed")  # Custom named colors for LaTeX
+  
+  if ("PassFail" %in% colnames(df)) {
+    df$PassFail <- sapply(df$PassFail, function(x) {
+      if (!is.na(x)) {
+        if (x == "PASS") {
+          # Select color based on format
+          bg_color <- ifelse(format == "html", colors_html$pass, colors_latex$pass)
+          cell_spec(x, format, background = bg_color, color = "white")
+        } else if (x == "FAIL") {
+          # Select color based on format
+          bg_color <- ifelse(format == "html", colors_html$fail, colors_latex$fail)
+          cell_spec(x, format, background = bg_color, color = "white")
+        } else {
+          x  # No formatting for other non-NA values
+        }
+      } else {
+        ""  # Handling for NA values
+      }
+    }, USE.NAMES = FALSE)
+  }
+  
+  # Apply gsub to escape percentages in LaTeX format
+  if (format == "latex") {
+    char_cols <- sapply(df, is.character)
+    df[char_cols] <- lapply(df[char_cols], function(x) gsub("%", "\\%", x, fixed = TRUE))
+  }
+  
+  # Generate the table with kable and apply additional styling
+  tableOutput <- knitr::kable(df, format = format, escape = FALSE, booktabs = TRUE) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    kableExtra::column_spec(1, bold = TRUE)
+  
+  return(tableOutput)
+  
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_data.R ###
+tabItem_data <- function() { 
+  tabItem(tabName = "data",
+          # Consolidated box for all inputs at the top
+          box(title = "Settings", status = "primary", solidHeader = TRUE, width = 12,
+              selectInput("testInput", "Select Test", 
+                          choices = c("QFA", "Ddimer", "Factors", "AntiXa", "DTIBI", "APTT", "SpecialCoag")),
+              uiOutput("limitValueUI"),  # replaces static numericInput
+              # Adding new inputs within the same box
+              textInput('testInput', label = 'Test:'),
+              textInput('reagentLotInput', label = 'Reagent Lot:'),
+              textInput('expirationInput', label = 'Expiration:'),
+              dateInput('dateInput', label = 'Date:', value = Sys.Date()),
+              checkboxGroupInput('comparisons', 'Comparisons',
+                                 choices = c('old-new', 'mil1-mil2', 'mil1-mil3', 'mil2-mil3'))
+          ),
+          fluidRow(
+            column(9,
+                   box(width = 12, title = "Enter Data", status = 'info', solidHeader = TRUE,
+                       fluidRow(
+                         column(12, rHandsontableOutput("hot"))  # Table for data entry
+                       )
+                   )
+            )
+          )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_download.R ###
+# Download tab
+tabItem_download <- function(){
+  tabItem(tabName = "download",
+          box(title = "Download Report", status = 'info',
+              radioButtons('format', h5('Document format'),
+                           c('PDF', 'HTML'),
+                           inline = TRUE),
+              downloadButton('downloadReport')
+          )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_info.R ###
+tabItem_info <- function(){ 
+   tabItem(tabName = "info",
+        h2("Method Comparison and Bias Estimation Using R and Shiny"),
+        br(),
+        h4('This website is a product of R programming language(1) and shiny(2) web application framework. Statistics are based on mcr package(3). Shinydashboard(4), rhandsontable(5) and pander(6) are used for website construction. Rmarkdown(7) is used for converting results into document files.'),
+        #              br(),
+        h4('How to:'),
+        h4('1. Copy/paste or manually enter your data using the "Data" tab and 
+                 enter method names.'),
+        h4('2. See your data distribution and choose statistical tests using the "Plots" tab.'),
+        h4('3. See the statistical evaluation of the selected data using the "Statistics" tab and 
+                 download using the "Download" tab.'),
+        br(),
+        h4('References and packages:'),
+        h5("1. R: A language and environment for statistical computing. 
+                 R Foundation for Statistical Computing, Vienna, Austria.",
+           a('https://www.R-project.org',
+             href = "https://www.R-project.org")),
+        h5("2. shiny: Web Application Framework for R.",
+           a("http://CRAN.R-project.org/package=shiny", 
+             href = "http://CRAN.R-project.org/package=shiny")),
+        h5("3. mcr: Method Comparison Regression.",
+           a('http://CRAN.R-project.org/package=mcr',
+             href = "http://CRAN.R-project.org/package=mcr")),
+        h5("4. shinydashboard: Create Dashboards with 'Shiny'.",
+           a('http://rstudio.github.io/shinydashboard',
+             href = "http://rstudio.github.io/shinydashboard")),
+        h5("5. rhandsontable: Interface to the 'Handsontable.js' Library.",
+           a('http://jrowen.github.io/rhandsontable',
+             href = "http://jrowen.github.io/rhandsontable")),
+        h5("6. pander: An R Pandoc Writer.",
+           a('http://rapporter.github.io/pander',
+             href = "http://rapporter.github.io/pander")),
+        h5("7. rmarkdown: Dynamic Documents for R.",
+           a('http://rmarkdown.rstudio.com',
+             href = "http://rmarkdown.rstudio.com")),
+        br(),
+        h4('This app is based on the Method Comparison app developed by Burak Bahar')
+)}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_moddata.R ###
+tabItem_moddata <- function() { 
+  tabItem(tabName = "modData",
+          column(12,
+                 box(width = 12, title = "Excel Table View", status = 'info', 
+                     fluidRow(
+                       column(12, 
+                              box(
+                                title = "Test Information",
+                                status = "info",
+                                solidHeader = TRUE,
+                                collapsible = TRUE,
+                                width = 12,
+                                htmlOutput("dynamicTest"),
+                                htmlOutput("dynamicLimitPer") ,
+                                htmlOutput("dynamicReagentLot"),
+                                htmlOutput("dynamicExpiration"),
+                                htmlOutput("dynamicDate")
+                              )
+                       ),
+                       fluidRow(
+                         column(6, htmlOutput("kableTable")), # kable table on the left
+                         column(6) # Space for potential future modifications or additional content
+                       )
+                     )
+                 )
+          )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_stats.R ###
+# Statistics tab
+tabItem_stats <- function(){
+  tabItem(tabName = "stats",
+          box(title = "Statistics", status = 'info', width = 12,
+              verbatimTextOutput("summary")
+          )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_subitem1.R ###
+# Tab for Bland-Altman Plot
+tabItem_subitem1 <- function(){
+  tabItem(tabName = "subitem1",
+          box(title = "Bland-Altman Plot", status = 'info', width = 8,
+              plotOutput("plot1")
+              ),
+          box(title = "Options", status='info', width = 4,
+              selectInput('batype', h5('Bland-Altman Plot Type'),
+                          choices=list('0.5*(X+Y) vs. Y-X' = 3,
+                                       'X vs. Y-X' = 1,
+                                       'rank(X) vs. Y-X' = 5,
+                                       '0.5*(X+Y) vs. (Y-X)/X' = 4,
+                                       'X vs. (Y-X)/X' = 2,
+                                       'rank(X) vs. (Y-X)/X' = 6,
+                                       'sqrt(X*Y) vs. Y/X' = 7,
+                                       '0.5*(X+Y) vs. (Y-X) / (0.5*(X+Y))' = 8
+                                       )
+                          )
+              )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_subitem2.R ###
+# Tab for Scatter Plot
+tabItem_subitem2 <- function(){
+  tabItem(tabName = "subitem2",
+          box(title = "Scatter Plot", status='info', width = 8,
+              plotOutput("plot2")
+              ),
+          box(title = "Options", status='info', width = 4,
+              selectInput('regmodel', h5('Regression Model'),
+                          choices=list('Ordinary Least Square' = 'LinReg',
+                                       'Weighted Ordinary Least Square' = 'WLinReg',
+                                       'Deming' = 'Deming',
+                                       'Weighted Deming' = 'WDeming',
+                                       'Passing-Bablok' = 'PaBa',
+                                       'Passing-Bablok Large Dataset' = 'PaBaLarge'),
+                        selected = "Deming"
+                          ),
+              fixedRow(
+                column(6,
+                selectInput('cimethod', h5('CI Method'),
+                            choices=list('Analytical' = 'analytical',
+                                         'Jackknife' = 'jackknife',
+                                         'Bootstrap' = 'bootstrap'
+                                         )
+                            )
+                       )
+                ,
+                column(6, selectInput('metbootci',h5('Bootstrap CI Method'),
+                                      choices = list('BCa' = 'BCa',
+                                                     'Quantile' = 'quantile'),
+                                      )
+                       )
+              ),
+              fixedRow(
+                column(6, selectInput('cormet',h5('Correlation Method'),
+                                      choices = list('Pearson' = 'pearson',
+                                                     'Spearman' = 'spearman',
+                                                     'Kendall' = 'kendall'
+                                      )
+                )
+                ),
+                column(6, numericInput('syx', h5('Error Ratio'), value = 1)
+                       )
+              ),
+              fixedRow(
+                column(6,
+                       checkboxInput('identity', 'Add identity line', value = TRUE),
+                       checkboxInput('ciarea', 'Add CI Area', value = TRUE)
+                       ),
+                column(6,
+                       checkboxInput('legend', 'Add Legend', value = TRUE),
+                       checkboxInput('addcor', 'Add Correlation',value = TRUE)
+                       )
+                )
+              )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_subitem3.R ###
+# Tab for Coefficient Plot
+tabItem_subitem3 <- function(){
+  tabItem(tabName = 'subitem3',
+          box(title = 'Coefficient Plot', status='info', width = 12,
+              plotOutput('plot3')
+          )
+  )
+}
+
+### C:/Users/obstfelda/OneDrive - Children's Hospital of Philadelphia/ResidentsAutopsy/Git/method_compare_e/www/tabitem_subitem4.R ###
+# Additional placeholder tab
+tabItem_subitem4 <- function(){
+  tabItem(tabName = 'subitem4',
+          box(title = '', status = 'info', width = 6,
+              plotOutput('plot4')
+              ),
+          box(title = '', status = 'info', width = 6,
+              plotOutput('plot5')
+          )
+  )
+}
+

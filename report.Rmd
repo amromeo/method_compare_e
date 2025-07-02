@@ -28,6 +28,7 @@ params:
   cormet: 'pearson'
   name: ''
   test: ''
+  limit: 0.15
   reagentLot: ''
   expiration: ''
   date: ''
@@ -46,8 +47,8 @@ library(kableExtra)
 
 # Assuming params contains test, reagentLot, expiration, date
 df_test_long <- data.frame(
-  Parameter = c("Test", "Reagent Lot", "Expiration", "Date"),
-  Value = c(params$test, params$reagentLot, params$expiration, params$date)
+  Parameter = c("Test", "Reagent Lot", "Expiration", "Date", "Limit (%)"),
+  Value = c(params$test, params$reagentLot, params$expiration, params$date, percent(params$limit, accuracy = 0.1))
 )
 
 # For HTML output
