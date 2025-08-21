@@ -2,21 +2,25 @@ tabItem_data <- function() {
   tabItem(tabName = "data",
           # Consolidated box for all inputs at the top
           box(title = "Settings", status = "primary", solidHeader = TRUE, width = 12,
-              selectInput("limitPerInput", "Select Limit Percentage", 
-                          choices = c("QFA Fibrinogen - 20%" = "QFA", 
-                                      "D dimer - 24%" = "Ddimer", 
-                                      "Factors - 15%" = "Factors",
-                                      "Anti-Xa Parameter - 20%" = "AntiXa",
-                                      "DTIBI Parameter - 20%" = "DTIBI",
-                                      "APTT - 20%" = "APTT",
-                                      "Special Coag Testing - 15%" = "SpecialCoag")),
+              selectInput("testInput", "Select Test", 
+                          choices = c("QFA", "Ddimer", "AntiXa", "DTIBI", "APTT", "PT","Thrombin Time", "Protein C", "Protein S","Protein S Free", "ADAMTS13 activity","sC5B9",
+                                          "Factor II (Prothrombin)", "Factor V", "Factor VII", "Factor VIII",
+                                          "Factor VIII Chromogenic", "Factor VIII Inhibitor", "Chromogenic Factor VIII Inhibitor",
+                                          "Factor IX", "Factor IX Inhibitor", "Factor X", "Factor XI", "Factor XII", "Factor XIII", "vWF Activity" , "vWF Antigen",
+                                          "Other")),
+              conditionalPanel(
+                condition = "input.testInput == 'Other'",
+                textInput("customTestInput", "Enter Custom Test Name:")
+              ),
+              uiOutput("limitValueUI"),  # replaces static numericInput
               # Adding new inputs within the same box
-              textInput('testInput', label = 'Test:'),
               textInput('reagentLotInput', label = 'Reagent Lot:'),
               textInput('expirationInput', label = 'Expiration:'),
               dateInput('dateInput', label = 'Date:', value = Sys.Date()),
-              checkboxGroupInput('comparisons', 'Comparisons',
-                                 choices = c('old-new', 'mil1-mil2', 'mil1-mil3', 'mil2-mil3'))
+              radioButtons('comparisons', 'Comparison',
+                           choices = c('old-new', 'mil1-mil2', 'mil1-mil3', 'mil2-mil3'),
+                           selected = 'old-new',
+                           inline = TRUE)
           ),
           fluidRow(
             column(9,

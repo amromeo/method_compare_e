@@ -28,6 +28,7 @@ params:
   cormet: 'pearson'
   name: ''
   test: ''
+  limit: 0.15
   reagentLot: ''
   expiration: ''
   date: ''
@@ -46,8 +47,15 @@ library(kableExtra)
 
 # Assuming params contains test, reagentLot, expiration, date
 df_test_long <- data.frame(
-  Parameter = c("Test", "Reagent Lot", "Expiration", "Date"),
-  Value = c(params$test, params$reagentLot, params$expiration, params$date)
+  Parameter = c("Test", "Comparison", "Reagent Lot", "Expiration", "Date", "Limit (%)"),
+  Value = c(
+    params$test,
+    paste(params$m1, "vs", params$m2),
+    params$reagentLot,
+    params$expiration,
+    params$date,
+    percent(params$limit, accuracy = 0.1)
+  )
 )
 
 # For HTML output
@@ -140,13 +148,19 @@ compareFit(data1)
 ```{r BA plot, echo=FALSE, results = 'markup'}
 library(mcr)
 a <- params$data
-if (is.null(a)) {
-return(NULL)} else {
-names(a) <- c('Sample','M1', 'M2')
-data1 <- mcreg(a$M1, a$M2,
-mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
-MCResult.plotDifference(data1, plot.type = params$batype, add.grid = TRUE)
-MCResult.plotDifference(data1, plot.type = 4, add.grid = TRUE) # Hard code want percent BA
+if (!is.null(a)) {
+  names(a) <- c('Sample','M1', 'M2')
+  data1 <- mcreg(a$M1, a$M2,
+                 mref.name = params$m1, mtest.name = params$m2, na.rm = TRUE)
+  
+  # First plot
+  par(mfrow = c(1, 1))
+  MCResult.plotDifference(data1, plot.type = params$batype, add.grid = TRUE)
+  
+  # Separate the second plot explicitly
+  cat("\n\n")  # extra spacing between plots
+  par(mfrow = c(1, 1))
+  MCResult.plotDifference(data1, plot.type = 4, add.grid = TRUE)
 }
 ```
 
