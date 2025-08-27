@@ -5,6 +5,7 @@ safe_filename <- function(x) gsub("[^a-zA-Z0-9_\\-]", "_", x)
 source("modules/data_processing.R")
 source("modules/plot_generation.R")
 source("modules/ui_reactive.R")
+source("modules/download_handler.R")
 
 shinyServer(function(input, output, session) {
   
@@ -202,63 +203,6 @@ shinyServer(function(input, output, session) {
   
 
   
-  output$downloadReport <- downloadHandler(
-
-    
-    filename = function() {
-      req(input$format, test_name())
-      m <- method_names()
-      paste0(
-        safe_filename(test_name()), "_",
-        safe_filename(m$m1), "_vs_", safe_filename(m$m2), "_",
-        Sys.Date(), ".", tolower(input$format)
-      )
-    },
-    content = function(file) {
-      currentData <- mod_data()
-      m <- method_names()
-      
-      params <- list(
-        tabledata = currentData,
-        data = vals$final_data,
-        m1 = m$m1,
-        m2 = m$m2,
-        syx = input$syx,
-        regmodel = input$regmodel,
-        cimethod = input$cimethod,
-        metbootci = input$metbootci,
-        batype = input$batype,
-        ciarea = input$ciarea,
-        legend = input$legend,
-        identity = input$identity,
-        addcor = input$addcor,
-        cormet = input$cormet,
-        name = input$name,
-        test = test_name(),
-        limit = input$limitValue,
-        reagentLot = input$reagentLotInput,
-        expiration = input$expirationInput,
-        date = format(input$dateInput, "%Y-%m-%d")
-      )
-      
-      # Prepare the R Markdown file for rendering
-      tempReport <- file.path(tempdir(), "report.Rmd")
-      file.copy("report.Rmd", tempReport, overwrite = TRUE)
-      
-      # Render the R Markdown document to the appropriate format
-      rmarkdown::render(
-        input = tempReport, 
-        output_file = file,
-        params = params,
-        output_format = switch(
-          input$format,
-          PDF = rmarkdown::pdf_document(), 
-          HTML = rmarkdown::html_document(), 
-          Word = rmarkdown::word_document()
-        ),
-        envir = new.env(parent = globalenv())
-      )
-    }
-  )
+  output$downloadReport <- create_download_handler(input, vals, mod_data, method_names, test_name, safe_filename)
   
 })
