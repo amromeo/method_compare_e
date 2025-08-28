@@ -35,5 +35,9 @@ tabItem_info <- function(){
            a('http://rmarkdown.rstudio.com',
              href = "http://rmarkdown.rstudio.com")),
         br(),
-        h4('This app is based on the Method Comparison app developed by Burak Bahar')
+        h4('This app is based on the Method Comparison app developed by Burak Bahar'),
+        
+        # Admin panel (only visible to authorized users)
+        hr(),
+        create_admin_panel_ui()
 )}

@@ -2,6 +2,9 @@
 safe_filename <- function(x) gsub("[^a-zA-Z0-9_\\-]", "_", x)
 
 # Source modules
+source("modules/logging.R")
+source("modules/log_viewer.R")
+source("modules/admin_panel.R")
 source("modules/error_handling.R")
 source("modules/reactive_data.R")
 source("modules/data_processing.R")
@@ -12,14 +15,21 @@ source("modules/validation.R")
 
 shinyServer(function(input, output, session) {
   
+  # Initialize session logging
+  session_id <- init_session_logging(session)
+  
+  # Debug button with proper logging
   observeEvent(input$debug_button, {
-    print(reactiveValuesToList(input))
+    input_state <- reactiveValuesToList(input)
+    log_audit("DEBUG_SNAPSHOT", paste("Input state captured,", length(input_state), "inputs"), session_id = session_id)
+    log_debug(paste("Input snapshot:", jsonlite::toJSON(input_state, auto_unbox = TRUE)), "debug", session_id)
   })
   
   input_snapshot <- reactiveVal()
   
   observeEvent(input$debug_button, {
     input_snapshot(reactiveValuesToList(input))
+    log_audit("SNAPSHOT_SAVED", "Input state saved for restore", session_id = session_id)
   })
   
   output$snapshot_text <- renderPrint({
@@ -31,6 +41,27 @@ shinyServer(function(input, output, session) {
   
   create_test_input_observer(input, session, default_limits)
   
+  # Log key input changes
+  observeEvent(input$testInput, {
+    if (!is.null(input$testInput)) {
+      log_user_interaction("TEST_SELECTED", "testInput", input$testInput, session_id)
+    }
+  })
+  
+  observeEvent(input$limitValue, {
+    if (!is.null(input$limitValue)) {
+      log_user_interaction("LIMIT_CHANGED", "limitValue", input$limitValue, session_id)
+    }
+  })
+  
+  observeEvent(input$hot, {
+    if (!is.null(input$hot)) {
+      hot_data <- hot_to_r(input$hot)
+      valid_count <- if (!is.null(hot_data)) sum(!is.na(hot_data$X) & !is.na(hot_data$Y), na.rm = TRUE) else 0
+      log_user_interaction("DATA_ENTERED", "hot", paste("Valid data pairs:", valid_count), session_id)
+    }
+  })
+  
   test_name <- create_test_name_reactive(input)
   
   
@@ -40,7 +71,11 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$restore_button, {
     snapshot <- input_snapshot()
-    if (is.null(snapshot)) return()
+    if (is.null(snapshot)) {
+      log_warning("Restore attempted but no snapshot available", "restore", session_id)
+      return()
+    }
+    log_audit("RESTORE_INPUTS", "Restoring previous input state", session_id = session_id)
     
     # Standard inputs
     if (!is.null(snapshot$limitValue)) updateNumericInput(session, "limitValue", value = snapshot$limitValue)
@@ -114,7 +149,7 @@ shinyServer(function(input, output, session) {
   
   # Define reactive chain: raw → processed → analysis/display
   raw_data <- create_raw_data_reactive(input)
-  processed_data <- create_processed_data_reactive(raw_data, input)
+  processed_data <- create_processed_data_reactive(raw_data, input, session_id)
   analysis_data <- create_analysis_data_reactive(processed_data)
   display_data <- create_display_data_reactive(processed_data)
   
@@ -185,6 +220,14 @@ shinyServer(function(input, output, session) {
   
 
   
-  output$downloadReport <- create_download_handler(input, analysis_data, display_data, method_names, test_name, safe_filename)
+  output$downloadReport <- create_download_handler(input, analysis_data, display_data, method_names, test_name, safe_filename, session_id)
+  
+  # Initialize admin panel (admin users only)
+  create_admin_panel_server(input, output, session, session_id)
+  
+  # Cleanup logging when session ends
+  session$onSessionEnded(function() {
+    cleanup_session_logging(session_id)
+  })
   
 })

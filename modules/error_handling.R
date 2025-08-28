@@ -91,6 +91,7 @@ safe_mcreg <- function(data_or_x, y = NULL, ..., context = "Analysis") {
     
   }, error = function(e) {
     error_msg <- paste(context, "failed:", e$message)
+    log_error_with_context(e$message, "safe_mcreg", context)
     showNotification(error_msg, type = "error", duration = 10)
     return(list(success = FALSE, result = NULL, error = error_msg))
   })
@@ -108,6 +109,7 @@ safe_plot <- function(plot_func, data, context = "Plot generation") {
     
   }, error = function(e) {
     error_msg <- paste(context, "failed:", e$message)
+    log_error_with_context(e$message, "safe_plot", context)
     showNotification(error_msg, type = "error", duration = 8)
     
     # Return a simple error plot
