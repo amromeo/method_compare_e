@@ -95,9 +95,14 @@ create_processed_data_reactive <- function(raw_data_reactive, input) {
       has_user_data <- any(!is.na(processed_df$X) | !is.na(processed_df$Y) | 
                           (processed_df$Sample != "" & !is.na(processed_df$Sample)), na.rm = TRUE)
       
+      # If no user data, return default structure without processing
+      if (!has_user_data) {
+        return(processed_df)
+      }
+      
       if (sum(valid_pairs) == 0 && has_user_data) {
         showNotification("No valid X,Y data pairs found", type = "warning")
-        return(NULL)
+        return(processed_df)  # Return structure instead of NULL
       }
       
       # Data quality checks for valid pairs only
@@ -155,11 +160,23 @@ create_processed_data_reactive <- function(raw_data_reactive, input) {
       return(processed_df)
       
     }, error = function(e) {
-      showNotification(
-        paste("Data processing error:", e$message), 
-        type = "error", duration = 10
-      )
-      return(NULL)
+      # Only show error if user has actually entered data
+      if (has_user_data) {
+        showNotification(
+          paste("Data processing error:", e$message), 
+          type = "error", duration = 10
+        )
+      }
+      # Return default structure instead of NULL
+      return(data.frame(
+        'Sample' = rep(NA_character_, 10),
+        'X' = rep(NA_real_, 10),
+        'Y' = rep(NA_real_, 10),
+        'Abs_Diff' = rep(NA_real_, 10),
+        'Per_Diff' = rep(NA_real_, 10),
+        'Pass_Fail' = rep(NA_character_, 10),
+        'Limit_per' = rep(limit_value, 10)
+      ))
     })
   })
 }
