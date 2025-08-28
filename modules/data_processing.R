@@ -55,8 +55,15 @@ create_data_observer <- function(input, vals) {
       valid_pairs <- !is.na(df$X) & !is.na(df$Y)
       valid_count <- sum(valid_pairs)
       
+      # Check if user has actually entered data (not just default NAs)
+      has_user_data <- any(!is.na(df$X) | !is.na(df$Y) | 
+                          (df$Sample != "" & !is.na(df$Sample)), na.rm = TRUE)
+      
       if (valid_count == 0) {
-        showNotification("No valid X,Y data pairs found", type = "warning")
+        # Only show warning if user has actually tried to enter data
+        if (has_user_data) {
+          showNotification("No valid X,Y data pairs found", type = "warning")
+        }
         return()
       }
       
