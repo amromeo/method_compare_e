@@ -8,9 +8,18 @@ if (Sys.getenv("R_CONFIG_ACTIVE") %in% c("", "development")) {
   message("Admin logging enabled for development environment")
 }
 
+# Additional fallback - enable admin logs if not in production
+if (Sys.getenv("ENABLE_ADMIN_LOGS") != "false") {
+  Sys.setenv("ENABLE_ADMIN_LOGS" = "true")
+  message("Admin logs enabled via fallback")
+}
+
 # Production environment admin configuration
 ADMIN_USERS <- c(
-  # Add your specific admin users here
+  # Add your specific admin users here - multiple formats to catch SSO variations
+  "obstfelda@chop.edu",             # Full email
+  "obstfelda",                       # Username only
+  "Obstfelda",                       # Capitalized username
   "your.email@company.com",
   "admin.user@company.com",
   "support@company.com"
