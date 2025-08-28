@@ -16,10 +16,8 @@ create_bland_altman_plot_render <- function(analysis_data_reactive, input) {
       return(NULL)
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         mref.name = input$m1, mtest.name = input$m2, 
                         na.rm = TRUE, 
                         context = "Bland-Altman regression")
@@ -57,10 +55,8 @@ create_method_comparison_plot_render <- function(analysis_data_reactive, input) 
       return(NULL)
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         error.ratio = input$syx, 
                         method.reg = input$regmodel, 
                         method.ci = input$cimethod,
@@ -107,10 +103,8 @@ create_fit_comparison_plot_render <- function(analysis_data_reactive, input) {
       return(NULL)
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         error.ratio = input$syx, 
                         method.reg = input$regmodel, 
                         method.ci = input$cimethod,
@@ -155,10 +149,8 @@ create_summary_render <- function(analysis_data_reactive, input) {
       return(invisible(NULL))
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         error.ratio = input$syx, 
                         method.reg = input$regmodel, 
                         method.ci = input$cimethod,
