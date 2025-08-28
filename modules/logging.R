@@ -11,7 +11,8 @@ LOG_LEVELS <- list(
 )
 
 # Default log level (can be changed via environment variable or input)
-current_log_level <- as.integer(Sys.getenv("APP_LOG_LEVEL", default = LOG_LEVELS$INFO))
+app_log_env <- Sys.getenv("APP_LOG_LEVEL")
+current_log_level <- if (app_log_env != "") as.integer(app_log_env) else LOG_LEVELS$INFO
 
 # Create log directory if it doesn't exist
 log_dir <- "logs"
