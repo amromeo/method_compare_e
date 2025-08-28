@@ -2,9 +2,9 @@
 # Contains render functions for plots and summary output
 
 # Create render function for Bland-Altman plot
-create_bland_altman_plot_render <- function(vals, input) {
+create_bland_altman_plot_render <- function(analysis_data_reactive, input) {
   renderPlot({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -16,10 +16,8 @@ create_bland_altman_plot_render <- function(vals, input) {
       return(NULL)
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         mref.name = input$m1, mtest.name = input$m2, 
                         na.rm = TRUE, 
                         context = "Bland-Altman regression")
@@ -36,9 +34,9 @@ create_bland_altman_plot_render <- function(vals, input) {
 }
 
 # Create render function for method comparison plot
-create_method_comparison_plot_render <- function(vals, input) {
+create_method_comparison_plot_render <- function(analysis_data_reactive, input) {
   renderPlot({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -57,10 +55,8 @@ create_method_comparison_plot_render <- function(vals, input) {
       return(NULL)
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         error.ratio = input$syx, 
                         method.reg = input$regmodel, 
                         method.ci = input$cimethod,
@@ -86,9 +82,9 @@ create_method_comparison_plot_render <- function(vals, input) {
 }
 
 # Create render function for fit comparison plot
-create_fit_comparison_plot_render <- function(vals, input) {
+create_fit_comparison_plot_render <- function(analysis_data_reactive, input) {
   renderPlot({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -107,10 +103,8 @@ create_fit_comparison_plot_render <- function(vals, input) {
       return(NULL)
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         error.ratio = input$syx, 
                         method.reg = input$regmodel, 
                         method.ci = input$cimethod,
@@ -132,9 +126,9 @@ create_fit_comparison_plot_render <- function(vals, input) {
 }
 
 # Create render function for summary output
-create_summary_render <- function(vals, input) {
+create_summary_render <- function(analysis_data_reactive, input) {
   renderPrint({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -155,10 +149,8 @@ create_summary_render <- function(vals, input) {
       return(invisible(NULL))
     }
     
-    names(a) <- c('Sample','M1', 'M2')
-    
-    # Use safe mcreg wrapper
-    result <- safe_mcreg(a$M1, a$M2, 
+    # Use safe mcreg wrapper with data frame
+    result <- safe_mcreg(a, 
                         error.ratio = input$syx, 
                         method.reg = input$regmodel, 
                         method.ci = input$cimethod,

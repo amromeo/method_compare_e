@@ -10,40 +10,46 @@ validate_medical_data <- function(data, test_name = "Unknown") {
     return(list(valid = FALSE, errors = errors))
   }
   
-  # Check required columns
-  required_cols <- c("X", "Y")
-  missing_cols <- setdiff(required_cols, names(data))
-  if (length(missing_cols) > 0) {
-    errors <- c(errors, paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
+  # Check required columns (support both X,Y and M1,M2 naming)
+  has_xy <- all(c("X", "Y") %in% names(data))
+  has_m1m2 <- all(c("M1", "M2") %in% names(data))
+  
+  if (!has_xy && !has_m1m2) {
+    errors <- c(errors, "Missing required columns: need either X,Y or M1,M2")
+    return(list(valid = FALSE, errors = errors))
   }
   
-  # Check if X and Y are numeric
-  if ("X" %in% names(data) && !is.numeric(data$X)) {
-    errors <- c(errors, "X values must be numeric")
+  # Use appropriate column names
+  x_col <- if (has_xy) "X" else "M1"
+  y_col <- if (has_xy) "Y" else "M2"
+  
+  # Check if columns are numeric
+  if (!is.numeric(data[[x_col]])) {
+    errors <- c(errors, paste(x_col, "values must be numeric"))
   }
-  if ("Y" %in% names(data) && !is.numeric(data$Y)) {
-    errors <- c(errors, "Y values must be numeric")
+  if (!is.numeric(data[[y_col]])) {
+    errors <- c(errors, paste(y_col, "values must be numeric"))
   }
   
   # Check for valid data (not all NA)
-  if ("X" %in% names(data) && "Y" %in% names(data)) {
-    valid_rows <- !is.na(data$X) & !is.na(data$Y)
-    if (sum(valid_rows) < 2) {
-      errors <- c(errors, "At least 2 pairs of valid X,Y values are required for analysis")
-    }
-    
+  valid_rows <- !is.na(data[[x_col]]) & !is.na(data[[y_col]])
+  if (sum(valid_rows) < 2) {
+    errors <- c(errors, "At least 2 pairs of valid data values are required for analysis")
+  }
+  
+  if (sum(valid_rows) >= 2) {
     # Check for reasonable ranges (medical test values should be positive)
-    if (any(data$X[valid_rows] < 0, na.rm = TRUE)) {
-      errors <- c(errors, "X values should not be negative for medical tests")
+    if (any(data[[x_col]][valid_rows] < 0, na.rm = TRUE)) {
+      errors <- c(errors, paste(x_col, "values should not be negative for medical tests"))
     }
-    if (any(data$Y[valid_rows] < 0, na.rm = TRUE)) {
-      errors <- c(errors, "Y values should not be negative for medical tests")
+    if (any(data[[y_col]][valid_rows] < 0, na.rm = TRUE)) {
+      errors <- c(errors, paste(y_col, "values should not be negative for medical tests"))
     }
     
     # Check for extremely large values that might indicate data entry errors
-    max_reasonable_value <- 10000 # Adjust based on test type if needed
-    if (any(data$X[valid_rows] > max_reasonable_value, na.rm = TRUE) || 
-        any(data$Y[valid_rows] > max_reasonable_value, na.rm = TRUE)) {
+    max_reasonable_value <- 10000
+    if (any(data[[x_col]][valid_rows] > max_reasonable_value, na.rm = TRUE) || 
+        any(data[[y_col]][valid_rows] > max_reasonable_value, na.rm = TRUE)) {
       errors <- c(errors, paste("Values above", max_reasonable_value, "detected - please verify data entry"))
     }
   }
@@ -52,9 +58,25 @@ validate_medical_data <- function(data, test_name = "Unknown") {
 }
 
 # Safe wrapper for mcreg function calls
-safe_mcreg <- function(x, y, ..., context = "Analysis") {
+safe_mcreg <- function(data_or_x, y = NULL, ..., context = "Analysis") {
   tryCatch({
-    # Validate inputs first
+    # Handle both data frame and vector inputs
+    if (is.data.frame(data_or_x)) {
+      # Data frame input - extract M1, M2 columns
+      if (!all(c("M1", "M2") %in% names(data_or_x))) {
+        stop("Data frame must contain M1 and M2 columns")
+      }
+      x <- data_or_x$M1
+      y <- data_or_x$M2
+    } else {
+      # Vector inputs
+      x <- data_or_x
+      if (is.null(y)) {
+        stop("Y values must be provided when using vector input")
+      }
+    }
+    
+    # Validate inputs
     if (length(x) != length(y)) {
       stop("X and Y must have the same length")
     }
