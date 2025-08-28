@@ -13,13 +13,14 @@ generate_report_filename <- function(input, test_name, method_names, safe_filena
 }
 
 # Prepare parameters for report rendering
-prepare_report_params <- function(input, vals, mod_data, method_names, test_name) {
-  currentData <- mod_data()
+prepare_report_params <- function(input, analysis_data_reactive, display_data_reactive, method_names, test_name) {
+  display_data <- display_data_reactive()
+  analysis_data <- analysis_data_reactive()
   m <- method_names()
   
   list(
-    tabledata = currentData,
-    data = vals$final_data,
+    tabledata = display_data,
+    data = analysis_data,
     m1 = m$m1,
     m2 = m$m2,
     syx = input$syx,
@@ -91,13 +92,13 @@ render_report_content <- function(file, params, input) {
 }
 
 # Create complete download handler
-create_download_handler <- function(input, vals, mod_data, method_names, test_name, safe_filename) {
+create_download_handler <- function(input, analysis_data_reactive, display_data_reactive, method_names, test_name, safe_filename) {
   downloadHandler(
     filename = function() {
       generate_report_filename(input, test_name, method_names, safe_filename)
     },
     content = function(file) {
-      params <- prepare_report_params(input, vals, mod_data, method_names, test_name)
+      params <- prepare_report_params(input, analysis_data_reactive, display_data_reactive, method_names, test_name)
       render_report_content(file, params, input)
     }
   )

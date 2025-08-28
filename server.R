@@ -3,6 +3,7 @@ safe_filename <- function(x) gsub("[^a-zA-Z0-9_\\-]", "_", x)
 
 # Source modules
 source("modules/error_handling.R")
+source("modules/reactive_data.R")
 source("modules/data_processing.R")
 source("modules/plot_generation.R")
 source("modules/ui_reactive.R")
@@ -108,8 +109,14 @@ shinyServer(function(input, output, session) {
   })
   
   
-  vals <- initialize_data_values()
-  create_data_observer(input, vals)
+  # Create clear reactive data pipeline
+  data_store <- create_reactive_data_store()
+  
+  # Define reactive chain: raw → processed → analysis/display
+  raw_data <- create_raw_data_reactive(input)
+  processed_data <- create_processed_data_reactive(raw_data, input)
+  analysis_data <- create_analysis_data_reactive(processed_data)
+  display_data <- create_display_data_reactive(processed_data)
   
   
 
@@ -125,9 +132,8 @@ shinyServer(function(input, output, session) {
   
   
   
-  datasetInput <- create_dataset_input_reactive(vals)
-  
-  mod_data <- create_mod_data_reactive(vals)
+  # Use display data for tables and reports
+  mod_data <- display_data
   
 
   output$kableTable <- renderText({
@@ -140,7 +146,18 @@ shinyServer(function(input, output, session) {
 
 
   output$hot <- renderRHandsontable({
-    a <- vals$final_data 
+    a <- processed_data()
+    if (is.null(a)) {
+      a <- data.frame(
+        'Sample' = rep(NA_character_, 10),
+        'X' = rep(NA_real_, 10),
+        'Y' = rep(NA_real_, 10),
+        'Abs_Diff' = rep(NA_real_, 10),
+        'Per_Diff' = rep(NA_real_, 10),
+        'Pass_Fail' = rep(NA_character_, 10),
+        'Limit_per' = rep(0.15, 10)
+      )
+    } 
     rhandsontable(a
                   , height = 482
                   , rowHeaders = NULL) %>%
@@ -154,17 +171,17 @@ shinyServer(function(input, output, session) {
   
   
   
-  output$plot1 <- create_bland_altman_plot_render(vals, input)
+  output$plot1 <- create_bland_altman_plot_render(analysis_data, input)
   
-  output$plot2 <- create_method_comparison_plot_render(vals, input)
+  output$plot2 <- create_method_comparison_plot_render(analysis_data, input)
 
-  output$plot3 <- create_fit_comparison_plot_render(vals, input)  
+  output$plot3 <- create_fit_comparison_plot_render(analysis_data, input)  
   
   
-  output$summary <- create_summary_render(vals, input)
+  output$summary <- create_summary_render(analysis_data, input)
   
 
   
-  output$downloadReport <- create_download_handler(input, vals, mod_data, method_names, test_name, safe_filename)
+  output$downloadReport <- create_download_handler(input, analysis_data, display_data, method_names, test_name, safe_filename)
   
 })

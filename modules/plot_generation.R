@@ -2,9 +2,9 @@
 # Contains render functions for plots and summary output
 
 # Create render function for Bland-Altman plot
-create_bland_altman_plot_render <- function(vals, input) {
+create_bland_altman_plot_render <- function(analysis_data_reactive, input) {
   renderPlot({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -36,9 +36,9 @@ create_bland_altman_plot_render <- function(vals, input) {
 }
 
 # Create render function for method comparison plot
-create_method_comparison_plot_render <- function(vals, input) {
+create_method_comparison_plot_render <- function(analysis_data_reactive, input) {
   renderPlot({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -86,9 +86,9 @@ create_method_comparison_plot_render <- function(vals, input) {
 }
 
 # Create render function for fit comparison plot
-create_fit_comparison_plot_render <- function(vals, input) {
+create_fit_comparison_plot_render <- function(analysis_data_reactive, input) {
   renderPlot({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -132,9 +132,9 @@ create_fit_comparison_plot_render <- function(vals, input) {
 }
 
 # Create render function for summary output
-create_summary_render <- function(vals, input) {
+create_summary_render <- function(analysis_data_reactive, input) {
   renderPrint({
-    a <- vals$final_data
+    a <- analysis_data_reactive()
     if (is.null(a)) {
       return(NULL)
     }
