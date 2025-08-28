@@ -43,23 +43,51 @@ prepare_report_params <- function(input, vals, mod_data, method_names, test_name
 
 # Render report content
 render_report_content <- function(file, params, input) {
-  # Prepare the R Markdown file for rendering
-  tempReport <- file.path(tempdir(), "report.Rmd")
-  file.copy("report.Rmd", tempReport, overwrite = TRUE)
-  
-  # Render the R Markdown document to the appropriate format
-  rmarkdown::render(
-    input = tempReport, 
-    output_file = file,
-    params = params,
-    output_format = switch(
-      input$format,
-      PDF = rmarkdown::pdf_document(), 
-      HTML = rmarkdown::html_document(), 
-      Word = rmarkdown::word_document()
-    ),
-    envir = new.env(parent = globalenv())
-  )
+  tryCatch({
+    # Validate report template exists
+    if (!file.exists("report.Rmd")) {
+      stop("Report template 'report.Rmd' not found")
+    }
+    
+    # Prepare the R Markdown file for rendering
+    tempReport <- file.path(tempdir(), "report.Rmd")
+    if (!file.copy("report.Rmd", tempReport, overwrite = TRUE)) {
+      stop("Failed to copy report template to temporary directory")
+    }
+    
+    # Validate output format
+    valid_formats <- c("PDF", "HTML", "Word")
+    if (!input$format %in% valid_formats) {
+      stop(paste("Invalid output format. Must be one of:", paste(valid_formats, collapse = ", ")))
+    }
+    
+    # Render the R Markdown document to the appropriate format
+    rmarkdown::render(
+      input = tempReport, 
+      output_file = file,
+      params = params,
+      output_format = switch(
+        input$format,
+        PDF = rmarkdown::pdf_document(), 
+        HTML = rmarkdown::html_document(), 
+        Word = rmarkdown::word_document()
+      ),
+      envir = new.env(parent = globalenv())
+    )
+    
+  }, error = function(e) {
+    error_msg <- paste("Report generation failed:", e$message)
+    showNotification(error_msg, type = "error", duration = 15)
+    
+    # Create a simple error file
+    writeLines(c(
+      "Report Generation Error",
+      paste("Time:", Sys.time()),
+      paste("Error:", e$message),
+      "",
+      "Please check your data and try again."
+    ), file)
+  })
 }
 
 # Create complete download handler
