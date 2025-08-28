@@ -43,7 +43,7 @@ create_raw_data_reactive <- function(input) {
 }
 
 # Create reactive for processed data (validation + calculations)
-create_processed_data_reactive <- function(raw_data_reactive, input) {
+create_processed_data_reactive <- function(raw_data_reactive, input, session_id = "unknown") {
   reactive({
     # Get raw data (which always provides default structure)
     raw_df <- raw_data_reactive()
@@ -97,8 +97,14 @@ create_processed_data_reactive <- function(raw_data_reactive, input) {
       
       # If no user data, return default structure without processing
       if (!has_user_data) {
+        log_debug("No user data detected, returning default structure", "data_processing", session_id)
         return(processed_df)
       }
+      
+      # Log data processing start
+      log_data_operation("DATA_PROCESSING_START", 
+                        paste("Valid pairs:", sum(valid_pairs), "| Total rows:", nrow(processed_df)), 
+                        session_id)
       
       if (sum(valid_pairs) == 0 && has_user_data) {
         showNotification("No valid X,Y data pairs found", type = "warning")
@@ -156,6 +162,12 @@ create_processed_data_reactive <- function(raw_data_reactive, input) {
       )
       
       processed_df$Limit_per <- limit_value
+      
+      # Log successful data processing
+      log_data_operation("DATA_PROCESSING_COMPLETE", 
+                        paste("Valid pairs:", sum(valid_pairs), "| Pass:", sum(processed_df$Pass_Fail == "PASS", na.rm = TRUE), 
+                              "| Fail:", sum(processed_df$Pass_Fail == "FAIL", na.rm = TRUE)), 
+                        session_id)
       
       return(processed_df)
       
