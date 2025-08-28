@@ -2,6 +2,7 @@
 safe_filename <- function(x) gsub("[^a-zA-Z0-9_\\-]", "_", x)
 
 # Source modules
+source("modules/error_handling.R")
 source("modules/data_processing.R")
 source("modules/plot_generation.R")
 source("modules/ui_reactive.R")
