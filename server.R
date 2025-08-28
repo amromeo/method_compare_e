@@ -146,8 +146,11 @@ shinyServer(function(input, output, session) {
 
 
   output$hot <- renderRHandsontable({
+    # Always show a table structure for data entry
     a <- processed_data()
-    if (is.null(a)) {
+    
+    # If no processed data, create default table structure
+    if (is.null(a) || nrow(a) == 0) {
       a <- data.frame(
         'Sample' = rep(NA_character_, 10),
         'X' = rep(NA_real_, 10),

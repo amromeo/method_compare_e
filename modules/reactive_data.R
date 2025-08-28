@@ -17,18 +17,24 @@ create_reactive_data_store <- function() {
 # Create reactive for raw data input (from HOT table)
 create_raw_data_reactive <- function(input) {
   reactive({
-    req(input$hot)
+    # Always provide a default structure, even without HOT input
+    default_structure <- data.frame(
+      Sample = rep(NA_character_, 10),
+      X = rep(NA_real_, 10),
+      Y = rep(NA_real_, 10)
+    )
+    
+    # If no HOT input yet, return default structure
+    if (is.null(input$hot)) {
+      return(default_structure)
+    }
     
     # Get data directly from HOT table
     raw_df <- hot_to_r(input$hot)
     
     # Ensure we have the required columns
     if (is.null(raw_df) || !all(c("Sample", "X", "Y") %in% names(raw_df))) {
-      return(data.frame(
-        Sample = rep(NA_character_, 10),
-        X = rep(NA_real_, 10),
-        Y = rep(NA_real_, 10)
-      ))
+      return(default_structure)
     }
     
     # Return clean raw data
@@ -39,22 +45,50 @@ create_raw_data_reactive <- function(input) {
 # Create reactive for processed data (validation + calculations)
 create_processed_data_reactive <- function(raw_data_reactive, input) {
   reactive({
-    req(input$limitValue)
-    
+    # Get raw data (which always provides default structure)
     raw_df <- raw_data_reactive()
-    if (is.null(raw_df) || nrow(raw_df) == 0) return(NULL)
+    if (is.null(raw_df) || nrow(raw_df) == 0) {
+      # Return default structure for HOT table
+      return(data.frame(
+        'Sample' = rep(NA_character_, 10),
+        'X' = rep(NA_real_, 10),
+        'Y' = rep(NA_real_, 10),
+        'Abs_Diff' = rep(NA_real_, 10),
+        'Per_Diff' = rep(NA_real_, 10),
+        'Pass_Fail' = rep(NA_character_, 10),
+        'Limit_per' = rep(0.15, 10)
+      ))
+    }
     
-    # Validate limit value
-    if (!is.numeric(input$limitValue) || input$limitValue < 0 || input$limitValue > 1) {
+    # Default limit value if not set
+    limit_value <- if (is.null(input$limitValue)) 0.15 else input$limitValue
+    
+    # Validate limit value (only if it exists)
+    if (!is.null(input$limitValue) && (!is.numeric(input$limitValue) || input$limitValue < 0 || input$limitValue > 1)) {
       showNotification("Limit value must be between 0 and 1", type = "error")
-      return(NULL)
+      # Return default structure even with invalid limit
+      return(data.frame(
+        'Sample' = rep(NA_character_, 10),
+        'X' = rep(NA_real_, 10),
+        'Y' = rep(NA_real_, 10),
+        'Abs_Diff' = rep(NA_real_, 10),
+        'Per_Diff' = rep(NA_real_, 10),
+        'Pass_Fail' = rep(NA_character_, 10),
+        'Limit_per' = rep(0.15, 10)
+      ))
     }
     
     tryCatch({
-      # Convert to numeric and validate
+      # Start with raw data and add calculated columns
       processed_df <- raw_df
       processed_df$X <- as.numeric(processed_df$X)
       processed_df$Y <- as.numeric(processed_df$Y)
+      
+      # Always add the calculated columns (initially with defaults)
+      processed_df$Abs_Diff <- rep(NA_real_, nrow(processed_df))
+      processed_df$Per_Diff <- rep(NA_real_, nrow(processed_df))
+      processed_df$Pass_Fail <- rep(NA_character_, nrow(processed_df))
+      processed_df$Limit_per <- rep(limit_value, nrow(processed_df))
       
       # Check if user has actually entered data
       valid_pairs <- !is.na(processed_df$X) & !is.na(processed_df$Y)
@@ -90,9 +124,13 @@ create_processed_data_reactive <- function(raw_data_reactive, input) {
         }
       }
       
-      # Calculate differences and pass/fail
-      processed_df$Abs_Diff <- processed_df$Y - processed_df$X
-      processed_df$Per_Diff <- ifelse(processed_df$X == 0, NA, processed_df$Abs_Diff / processed_df$X)
+      # Only calculate for valid data pairs
+      if (sum(valid_pairs) > 0) {
+        # Calculate differences and pass/fail
+        processed_df$Abs_Diff[valid_pairs] <- processed_df$Y[valid_pairs] - processed_df$X[valid_pairs]
+        processed_df$Per_Diff[valid_pairs] <- ifelse(processed_df$X[valid_pairs] == 0, NA, 
+                                                    processed_df$Abs_Diff[valid_pairs] / processed_df$X[valid_pairs])
+      }
       
       # Handle division by zero warnings
       zero_x_count <- sum(processed_df$X == 0 & valid_pairs, na.rm = TRUE)
