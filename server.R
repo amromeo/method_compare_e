@@ -1,6 +1,13 @@
 
 safe_filename <- function(x) gsub("[^a-zA-Z0-9_\\-]", "_", x)
 
+# Source modules
+source("modules/data_processing.R")
+source("modules/plot_generation.R")
+source("modules/ui_reactive.R")
+source("modules/download_handler.R")
+source("modules/validation.R")
+
 shinyServer(function(input, output, session) {
   
   observeEvent(input$debug_button, {
@@ -17,67 +24,15 @@ shinyServer(function(input, output, session) {
     input_snapshot()
   })
   
-  default_limits <- c(
-    QFA = 0.20,
-    Ddimer = 0.24,
-    AntiXa = 0.20,
-    DTIBI = 0.20,
-    APTT = 0.15,
-    PT = 0.15,
-    "vWF Antigen" = 0.15,
-    "vWF Activity" = 0.15,
-    "Thrombin Time" = 0.20,
-    "Protein C" = 0.15,
-    "Protein S" = 0.15,
-    "Protein S Free" = 0.15,
-    "ADAMTS13 activity" = 0.20,
-    sC5B9 = 0.20,
-    "Factor II (Prothrombin)" = 0.15,
-    "Factor V" = 0.15,
-    "Factor VII" = 0.15,
-    "Factor VIII" = 0.15,
-    "Factor VIII Chromogenic" = 0.15,
-    "Factor VIII Inhibitor" = 0.15,
-    "Chromogenic Factor VIII Inhibitor" = 0.15,
-    "Factor IX" = 0.15,
-    "Factor IX Inhibitor" = 0.15,
-    "Factor X" = 0.15,
-    "Factor XI" = 0.15,
-    "Factor XII" = 0.15,
-    "Factor XIII" = 0.15
-  )
+  default_limits <- get_default_limits()
   
   
-  observeEvent(input$testInput, {
-    req(input$testInput)
-    if (input$testInput %in% names(default_limits)) {
-      updateNumericInput(session, "limitValue", value = default_limits[[input$testInput]])
-    }
-  })
+  create_test_input_observer(input, session, default_limits)
   
-  test_name <- reactive({
-    if (input$testInput == "Other") {
-      req(input$customTestInput)
-      input$customTestInput
-    } else {
-      input$testInput
-    }
-  })
+  test_name <- create_test_name_reactive(input)
   
   
-  output$limitValueUI <- renderUI({
-    req(input$testInput)
-    
-    init_limit <- if (input$testInput %in% names(default_limits)) {
-      default_limits[[input$testInput]]
-    } else {
-      0.15  # fallback if "Other" or unknown
-    }
-    
-    numericInput("limitValue", "Set % Cutoff", 
-                 value = init_limit, 
-                 min = 0, max = 1, step = 0.01)
-  })
+  output$limitValueUI <- create_limit_value_ui_render(input, default_limits)
   
   
   
@@ -152,143 +107,26 @@ shinyServer(function(input, output, session) {
   })
   
   
-  vals <- reactiveValues(hot_data = data.frame('Sample'= rep(NA_character_, 10),
-                                               'X'= round(c(rep(NA, 10)), digits = 2),
-                                               'Y'= round(c(rep(NA, 10)), digits = 2),
-                                               'Abs_Diff'= round(c(rep(NA, 10)), digits = 2),
-                                               'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
-                                               'Pass_Fail'= rep(NA_character_, 10),
-                                               'Limit_per' = rep(TRUE,10)
-                                               ), 
-                         final_data = data.frame('Sample'= rep(NA_character_, 10),
-                                                 'X'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Y'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Abs_Diff'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Per_Diff'= round(c(rep(NA, 10)), digits = 2),
-                                                 'Pass_Fail'= rep(NA_character_, 10),
-                                                 'Limit_per' = rep(.15,10)
-                                                 )
-                         )
-  observe({
-    req(input$hot)
-    req(input$limitValue) 
-    df <- hot_to_r(input$hot)
-    
-    if (is.null(df) || nrow(df) == 0) return()
-    if (!all(c("X", "Y") %in% names(df))) return()
-    if (!is.numeric(df$X) || !is.numeric(df$Y)) return()
-    
-    df$Abs_Diff <- df$Y - df$X
-    df$Per_Diff <- df$Abs_Diff / df$X
-    limit_value <- input$limitValue
-    
-    df$Per_Diff <- suppressWarnings(as.numeric(df$Per_Diff))  # Converts characters to numeric, gives NA if not valid
-    if (length(df$Per_Diff) == 0 || length(df$Per_Diff) != nrow(df)) {
-      df$Pass_Fail <- rep("", nrow(df))
-    } else {
-      print("DEBUG: Per_Diff content")
-      print(df$Per_Diff)
-      print("DEBUG: limit_value")
-      print(limit_value)
-      print("DEBUG: abs(Per_Diff) <= limit_value")
-      print(abs(df$Per_Diff) <= limit_value)
-      
-      # Fallback default if comparison fails
-      logic_check <- abs(df$Per_Diff) <= limit_value
-      if (length(logic_check) != nrow(df)) {
-        logic_check <- rep(NA, nrow(df))
-      }
-      
-      df$Pass_Fail <- dplyr::case_when(
-        is.na(df$Per_Diff) ~ "",
-        logic_check ~ "PASS",
-        TRUE ~ "FAIL"
-      )
-      
-    }
-    
-    df$Limit_per <- limit_value
-    vals$final_data <- df
-  })
+  vals <- initialize_data_values()
+  create_data_observer(input, vals)
   
   
 
-  output$dynamicReagentLot <- renderUI({
-    HTML(paste("<p><strong>Reagent Lot:</strong>", ifelse(is.null(input$reagentLotInput), "Not entered", input$reagentLotInput), "</p>"))
-  })
+  output$dynamicReagentLot <- create_dynamic_reagent_lot_render(input)
   
-  output$dynamicExpiration <- renderUI({
-    HTML(paste("<p><strong>Expiration:</strong>", ifelse(is.null(input$expirationInput), "Not entered", input$expirationInput), "</p>"))
-  })
+  output$dynamicExpiration <- create_dynamic_expiration_render(input)
   
-  output$dynamicLimitPer <- renderUI({
-    req(test_name(), input$limitValue)
-    HTML(paste("<p><strong>Test:</strong>", test_name(), "</p>",
-               "<p><strong>Limit (%):</strong>", percent(input$limitValue, accuracy = 0.1), "</p>"))
-  })
+  output$dynamicLimitPer <- create_dynamic_limit_per_render(input, test_name)
   
   
   
-  output$dynamicDate <- renderUI({
-    # Ensure input$dateInput is a Date object before formatting
-    formattedDate <- if(!is.null(input$dateInput) && inherits(input$dateInput, "Date")) {
-      format(input$dateInput, "%Y-%m-%d")
-    } else {
-      "Not entered"
-    }
-    HTML(paste("<p><strong>Date:</strong>", formattedDate, "</p>"))
-  })
+  output$dynamicDate <- create_dynamic_date_render(input)
   
   
   
-  datasetInput <- eventReactive(vals$hot_data,{
-    vals$hot_data
-  })
+  datasetInput <- create_dataset_input_reactive(vals)
   
-  mod_data <- reactive({
-    df <- vals$final_data
-
-    # Filter out rows where columns 1, 2, and 3 are all empty
-    df <- df %>% 
-      filter(!is.na(X) & !is.na(Y))
-
-    
-    if (nrow(df) == 0) {
-      # No data entered, show a user-friendly error message
-      shiny::showNotification("Please enter data into the table.", type = "error")
-      return(data.frame())  # Return an empty data frame
-    }
-    
-    summary_stats <- data.frame(matrix(ncol = ncol(df), nrow = 1)) # Create a data frame for summary stats
-    colnames(summary_stats) <- colnames(df)
-   
-    
-    # Assuming 4th and 5th columns are numeric and we're calculating their mean
-    summary_stats[1, 4] <- mean(df[[4]], na.rm = TRUE)
-    summary_stats[1, 5] <- mean(df[[5]], na.rm = TRUE)
-    summary_stats[1, 1] <- "SUMMARY"
-    
-    # Append summary statistics row to df
-    df <- rbind(df, summary_stats)
-    
-    df <- df%>%
-      mutate(
-        Per_Diff = percent(Per_Diff, accuracy = 0.1),
-        Limit_per =percent(Limit_per, accuracy = 0.1)
-      ) %>%
-      mutate(across(everything(), ~ifelse(is.na(.), "", .)))
-    
-    colnames(df) <- c(
-    'Sample',
-    'X',
-    'Y',
-    'AbsDiff',
-    'PerDiff',
-    'PassFail',
-    'Limitper')
-    
-    return(df)
-  })
+  mod_data <- create_mod_data_reactive(vals)
   
 
   output$kableTable <- renderText({
@@ -315,136 +153,17 @@ shinyServer(function(input, output, session) {
   
   
   
-  output$plot1 <- renderPlot({
-    
-    a <- vals$final_data
-    if (is.null(a)) {
-      return(NULL)} else {
-        names(a) <- c('Sample','M1', 'M2')
-        data1 <- try(mcreg(a$M1, a$M2,
-                       mref.name = input$m1, mtest.name = input$m2, 
-                       na.rm = TRUE), silent = TRUE)
-        try(MCResult.plotDifference(data1, plot.type = input$batype,
-                                add.grid = TRUE), silent = TRUE)
-        
-      }
-    
-  })
+  output$plot1 <- create_bland_altman_plot_render(vals, input)
   
-  output$plot2 <- renderPlot({
-    
-    a <- vals$final_data
-    if (is.null(a)) {
-      return(NULL)} else {
-        names(a) <- c('Sample','M1', 'M2')
-        data1 <- try(mcreg(a$M1, a$M2, error.ratio = input$syx, 
-                       method.reg = input$regmodel, method.ci = input$cimethod,
-                       method.bootstrap.ci = input$metbootci, 
-                       slope.measure = "radian", na.rm = TRUE), silent = TRUE)
-        try(MCResult.plot(data1, ci.area = input$ciarea,
-                      add.legend = input$legend, identity = input$identity,
-                      add.cor = input$addcor, x.lab = input$m1,
-                      y.lab = input$m2, cor.method = input$cormet,
-                      equal.axis = TRUE, add.grid = TRUE, 
-                      na.rm = TRUE), silent = TRUE)
-        
-      }
-    
-  })
+  output$plot2 <- create_method_comparison_plot_render(vals, input)
 
-  output$plot3 <- renderPlot({
-    
-    a <- vals$final_data
-    if (is.null(a)) {
-      return(NULL)} else {
-        names(a) <- c('Sample','M1', 'M2')
-        data1 <- try(mcreg(a$M1, a$M2, error.ratio = input$syx, 
-                       method.reg = input$regmodel, method.ci = input$cimethod,
-                       method.bootstrap.ci = input$metbootci, slope.measure = "radian",
-                       mref.name = input$m1, mtest.name = input$m2, 
-                       na.rm = TRUE), silent = TRUE)
-        try(compareFit(data1), silent = TRUE)
-        
-      }
-    
-  })  
+  output$plot3 <- create_fit_comparison_plot_render(vals, input)  
   
   
-  output$summary <- renderPrint({
-    
-    a <- vals$final_data
-    if (is.null(a)) {
-      return(NULL)} else {
-        names(a) <- c('Sample','M1', 'M2')
-        data1 <- try(mcreg(a$M1, a$M2, error.ratio = input$syx, 
-                       method.reg = input$regmodel, method.ci = input$cimethod,
-                       method.bootstrap.ci = input$metbootci, slope.measure = "radian",
-                       mref.name = input$m1, mtest.name = input$m2, 
-                       na.rm = TRUE), silent = TRUE)
-        try(printSummary(data1), silent = TRUE)
-      }
-    
-  })
+  output$summary <- create_summary_render(vals, input)
   
 
   
-  output$downloadReport <- downloadHandler(
-
-    
-    filename = function() {
-      req(input$format, test_name())
-      m <- method_names()
-      paste0(
-        safe_filename(test_name()), "_",
-        safe_filename(m$m1), "_vs_", safe_filename(m$m2), "_",
-        Sys.Date(), ".", tolower(input$format)
-      )
-    },
-    content = function(file) {
-      currentData <- mod_data()
-      m <- method_names()
-      
-      params <- list(
-        tabledata = currentData,
-        data = vals$final_data,
-        m1 = m$m1,
-        m2 = m$m2,
-        syx = input$syx,
-        regmodel = input$regmodel,
-        cimethod = input$cimethod,
-        metbootci = input$metbootci,
-        batype = input$batype,
-        ciarea = input$ciarea,
-        legend = input$legend,
-        identity = input$identity,
-        addcor = input$addcor,
-        cormet = input$cormet,
-        name = input$name,
-        test = test_name(),
-        limit = input$limitValue,
-        reagentLot = input$reagentLotInput,
-        expiration = input$expirationInput,
-        date = format(input$dateInput, "%Y-%m-%d")
-      )
-      
-      # Prepare the R Markdown file for rendering
-      tempReport <- file.path(tempdir(), "report.Rmd")
-      file.copy("report.Rmd", tempReport, overwrite = TRUE)
-      
-      # Render the R Markdown document to the appropriate format
-      rmarkdown::render(
-        input = tempReport, 
-        output_file = file,
-        params = params,
-        output_format = switch(
-          input$format,
-          PDF = rmarkdown::pdf_document(), 
-          HTML = rmarkdown::html_document(), 
-          Word = rmarkdown::word_document()
-        ),
-        envir = new.env(parent = globalenv())
-      )
-    }
-  )
+  output$downloadReport <- create_download_handler(input, vals, mod_data, method_names, test_name, safe_filename)
   
 })
