@@ -36,7 +36,7 @@ shinyServer(function(input, output, session) {
     input_snapshot()
   })
   
-  default_limits <- get_default_limits()
+  default_limits <- load_test_limits()
   
   
   create_test_input_observer(input, session, default_limits)
