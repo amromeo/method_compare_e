@@ -29,15 +29,15 @@
     },
     
     "defaults": {
-      "regression_model": "Deming",
-      "ci_method": "Bootstrap", 
-      "bootstrap_ci_method": "Quantile",
+      "regression_model": "Passing-Bablok",
+      "ci_method": "Analytical", 
+      "bootstrap_ci_method": "BCa",
       "correlation_method": "Pearson",
       "error_ratio": 1,
-      "add_identity_line": false,
-      "add_ci_area": false,
-      "add_legend": false,
-      "add_correlation": false
+      "add_identity_line": true,
+      "add_ci_area": true,
+      "add_legend": true,
+      "add_correlation": true
     }
   },
   
@@ -56,7 +56,7 @@
     },
     
     "defaults": {
-      "plot_type": "X vs. Y-X"
+      "plot_type": "0.5*(X+Y) vs. Y-X"
     }
   }
 }
