@@ -1,5 +1,7 @@
 # Tab for Scatter Plot
 tabItem_subitem2 <- function(){
+  # Load configuration
+  source("modules/config_loader.R", local = TRUE)
   tabItem(tabName = "subitem2",
           box(title = "Scatter Plot", status='info', width = 8,
               plotOutput("plot2")
@@ -12,7 +14,7 @@ tabItem_subitem2 <- function(){
                                        'Weighted Deming' = 'WDeming',
                                        'Passing-Bablok' = 'PaBa',
                                        'Passing-Bablok Large Dataset' = 'PaBaLarge'),
-                        selected = "PaBa"
+                        selected = get_plot_default("scatter_plot", "regression_model")
                           ),
               fixedRow(
                 column(6,
@@ -20,13 +22,15 @@ tabItem_subitem2 <- function(){
                             choices=list('Analytical' = 'analytical',
                                          'Jackknife' = 'jackknife',
                                          'Bootstrap' = 'bootstrap'
-                                         )
+                                         ),
+                            selected = get_plot_default("scatter_plot", "ci_method")
                             )
                        )
                 ,
                 column(6, selectInput('metbootci',h5('Bootstrap CI Method'),
                                       choices = list('BCa' = 'BCa',
                                                      'Quantile' = 'quantile'),
+                                      selected = get_plot_default("scatter_plot", "bootstrap_ci_method")
                                       )
                        )
               ),
@@ -35,20 +39,26 @@ tabItem_subitem2 <- function(){
                                       choices = list('Pearson' = 'pearson',
                                                      'Spearman' = 'spearman',
                                                      'Kendall' = 'kendall'
-                                      )
+                                      ),
+                                      selected = get_plot_default("scatter_plot", "correlation_method")
                 )
                 ),
-                column(6, numericInput('syx', h5('Error Ratio'), value = 1)
+                column(6, numericInput('syx', h5('Error Ratio'), 
+                                       value = get_plot_default("scatter_plot", "error_ratio"))
                        )
               ),
               fixedRow(
                 column(6,
-                       checkboxInput('identity', 'Add identity line', value = TRUE),
-                       checkboxInput('ciarea', 'Add CI Area', value = TRUE)
+                       checkboxInput('identity', 'Add identity line', 
+                                     value = get_plot_default("scatter_plot", "add_identity_line")),
+                       checkboxInput('ciarea', 'Add CI Area', 
+                                     value = get_plot_default("scatter_plot", "add_ci_area"))
                        ),
                 column(6,
-                       checkboxInput('legend', 'Add Legend', value = TRUE),
-                       checkboxInput('addcor', 'Add Correlation',value = TRUE)
+                       checkboxInput('legend', 'Add Legend', 
+                                     value = get_plot_default("scatter_plot", "add_legend")),
+                       checkboxInput('addcor', 'Add Correlation', 
+                                     value = get_plot_default("scatter_plot", "add_correlation"))
                        )
                 )
               )

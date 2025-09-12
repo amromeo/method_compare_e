@@ -1,0 +1,62 @@
+{
+  "_comment": "Plot default settings - use the exact labels shown in _available_options",
+  "_note": "This configuration file allows you to customize the default values for plot settings without modifying code",
+  
+  "scatter_plot": {
+    "_available_options": {
+      "regression_model": [
+        "Ordinary Least Square",
+        "Weighted Ordinary Least Square", 
+        "Deming",
+        "Weighted Deming",
+        "Passing-Bablok",
+        "Passing-Bablok Large Dataset"
+      ],
+      "ci_method": [
+        "Analytical", 
+        "Jackknife", 
+        "Bootstrap"
+      ],
+      "bootstrap_ci_method": [
+        "BCa", 
+        "Quantile"
+      ],
+      "correlation_method": [
+        "Pearson", 
+        "Spearman", 
+        "Kendall"
+      ]
+    },
+    
+    "defaults": {
+      "regression_model": "Passing-Bablok",
+      "ci_method": "Analytical", 
+      "bootstrap_ci_method": "BCa",
+      "correlation_method": "Pearson",
+      "error_ratio": 1,
+      "add_identity_line": true,
+      "add_ci_area": true,
+      "add_legend": true,
+      "add_correlation": true
+    }
+  },
+  
+  "bland_altman": {
+    "_available_options": {
+      "plot_type": [
+        "0.5*(X+Y) vs. Y-X",
+        "X vs. Y-X", 
+        "rank(X) vs. Y-X",
+        "0.5*(X+Y) vs. (Y-X)/X",
+        "X vs. (Y-X)/X",
+        "rank(X) vs. (Y-X)/X", 
+        "sqrt(X*Y) vs. Y/X",
+        "0.5*(X+Y) vs. (Y-X) / (0.5*(X+Y))"
+      ]
+    },
+    
+    "defaults": {
+      "plot_type": "0.5*(X+Y) vs. Y-X"
+    }
+  }
+}
