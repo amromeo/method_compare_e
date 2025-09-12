@@ -1,5 +1,7 @@
 # Tab for Bland-Altman Plot
 tabItem_subitem1 <- function(){
+  # Load configuration
+  source("modules/config_loader.R", local = TRUE)
   tabItem(tabName = "subitem1",
           box(title = "Bland-Altman Plot", status = 'info', width = 8,
               plotOutput("plot1")
@@ -14,7 +16,8 @@ tabItem_subitem1 <- function(){
                                        'rank(X) vs. (Y-X)/X' = 6,
                                        'sqrt(X*Y) vs. Y/X' = 7,
                                        '0.5*(X+Y) vs. (Y-X) / (0.5*(X+Y))' = 8
-                                       )
+                                       ),
+                          selected = get_plot_default("bland_altman", "plot_type")
                           )
               )
   )
