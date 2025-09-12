@@ -41,7 +41,7 @@ tabItem_subitem2 <- function(){
                                                      'Kendall' = 'kendall'
                                       ),
                                       selected = get_plot_default("scatter_plot", "correlation_method")
-                ))
+                )
                 ),
                 column(6, numericInput('syx', h5('Error Ratio'), 
                                        value = get_plot_default("scatter_plot", "error_ratio"))
