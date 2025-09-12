@@ -1,7 +1,23 @@
 # Validation Module
 # Contains default limits, input validation functions, and test name resolution
 
-# Define default limits for various test types
+# Load test limits from external configuration file
+load_test_limits <- function(config_file = "config/test_limits.json") {
+  if (file.exists(config_file)) {
+    tryCatch({
+      limits <- jsonlite::fromJSON(config_file)
+      return(unlist(limits))
+    }, error = function(e) {
+      warning("Could not load config file, using default limits: ", e$message)
+      return(get_default_limits())
+    })
+  } else {
+    warning("Config file not found, using default limits")
+    return(get_default_limits())
+  }
+}
+
+# Define default limits (fallback)
 get_default_limits <- function() {
   c(
     QFA = 0.20,
@@ -32,6 +48,13 @@ get_default_limits <- function() {
     "Factor XII" = 0.15,
     "Factor XIII" = 0.15
   )
+}
+
+# Get test choices from config file with 'Other' always included
+get_test_choices <- function(config_file = "config/test_limits.json") {
+  limits <- load_test_limits(config_file)
+  test_names <- names(limits)
+  c(test_names, "Other")
 }
 
 # Create observer for test input validation and limit updates
