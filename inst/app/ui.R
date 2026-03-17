@@ -2,7 +2,7 @@
 dashboardPage(
   dashboardHeader(title = "CHOP Coagulation Lab Method Comparison Tool"),
   dashboardSidebar(
-    sidebarMenu(
+    sidebarMenu(id = "tabs",
       menuItem("Data", tabName = "data", 
                icon = icon("table", "fa-lg")
                ),

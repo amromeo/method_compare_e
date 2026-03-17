@@ -1,5 +1,20 @@
 tabItem_data <- function() { 
   tabItem(tabName = "data",
+          # Quick start guide
+          box(title = "Start Here", status = "info", solidHeader = TRUE, width = 12,
+              p("1) Enter or load data, 2) Set limits/models, 3) View plots & stats, 4) Download report."),
+              div(
+                class = "start-here-links",
+                actionLink("jump_data", "Data", icon = icon("table")),
+                " · ",
+                actionLink("jump_plots", "Plots", icon = icon("line-chart")),
+                " · ",
+                actionLink("jump_stats", "Stats", icon = icon("calculator")),
+                " · ",
+                actionLink("jump_download", "Download", icon = icon("download"))
+              )
+          ),
+          
           # Consolidated box for all inputs at the top
           box(title = "Settings", status = "primary", solidHeader = TRUE, width = 12,
               selectInput("testInput", "Select Test", 
@@ -19,11 +34,22 @@ tabItem_data <- function() {
                            inline = TRUE)
           ),
           fluidRow(
-            column(9,
+            column(7,
                    box(width = 12, title = "Enter Data", status = 'info', solidHeader = TRUE,
-                       fluidRow(
-                         column(12, rHandsontableOutput("hot"))  # Table for data entry
-                       )
+                       div(class = "mb-2",
+                           actionButton("load_sample", "Load Sample Dataset", icon = icon("magic"), class = "btn-sm btn-success"),
+                           actionButton("reset_hot", "Reset Table", icon = icon("undo"), class = "btn-sm btn-default"),
+                           span(class = "label label-primary", textOutput("valid_pairs_badge", inline = TRUE)),
+                           span(class = "label label-info", textOutput("row_count_badge", inline = TRUE)),
+                           span(class = "label label-warning", textOutput("limit_badge", inline = TRUE))
+                       ),
+                       rHandsontableOutput("hot"),
+                       uiOutput("validation_alert")
+                   )
+            ),
+            column(5,
+                   box(width = 12, title = "Clean Data (read-only)", status = 'primary', solidHeader = TRUE,
+                       DT::dataTableOutput("clean_table")
                    )
             )
           )
