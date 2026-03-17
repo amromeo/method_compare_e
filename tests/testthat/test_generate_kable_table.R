@@ -3,7 +3,8 @@ library(dplyr)
 library(kableExtra)
 library(knitr)
 
-source("../../www/funs.R")
+funs_path <- system.file("app/www/funs.R", package = "methodCompare")
+source(funs_path)
 
 test_that("generateKableTable handles empty data frame", {
   out <- generateKableTable(data.frame(), format = "html")

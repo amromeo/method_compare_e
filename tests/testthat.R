@@ -1,3 +1,4 @@
 library(testthat)
-library(kableExtra)
-test_dir("tests/testthat")
+library(methodCompare)
+
+test_check("methodCompare")

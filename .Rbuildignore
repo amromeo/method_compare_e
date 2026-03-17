@@ -1,0 +1,5 @@
+^.*\\.Rproj$
+^\\.Rproj\\.user$
+^inst/app/logs$
+^mcr.pdf$
+^combined_output\\.txt$

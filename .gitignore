@@ -2,3 +2,5 @@
 *.Rhistory
 *.RData
 *.Ruserdata
+inst/app/config/admin_config.R
+logs/

@@ -1,3 +1,22 @@
-# method compare
+# Method Compare
 
-Amazing method comparison based on work of Burak Bahar!
+Packaged Shiny app for CHOP Coagulation method comparison & bias estimation.
+
+## Quickstart (dev)
+1. Install deps: `install.packages("devtools")`.
+2. From the repo root run `devtools::load_all(); run_app()` to launch locally.
+3. Tests: `devtools::test()` (uses `tests/testthat`).
+
+## Posit Connect
+Deploy by pushing the package bundle or selecting `inst/app` as the content
+directory. Entry point is `methodCompare::run_app()`.
+
+## Structure
+- `inst/app` — Shiny app code (ui/server/global, modules, www assets, config).
+- `R/` — package helpers (currently just `run_app()`).
+- `tests/` — `testthat` tests targeting key render helpers.
+- `.github/workflows` — CI for install + tests.
+
+## Configuration
+Runtime JSON/R configs live in `inst/app/config`. Add secrets/admin overrides
+as `inst/app/config/admin_config.R` (git-ignored in deployments).
