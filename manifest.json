@@ -2109,6 +2109,33 @@
         "Built": "R 4.4.3; ; 2025-12-15 03:11:06 UTC; windows"
       }
     },
+    "sendmailR": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "sendmailR",
+        "Version": "1.4-0",
+        "Title": "Send Email Using R",
+        "Description": "Package contains a simple SMTP client with minimal dependencies which \n        provides a portable solution for sending email, including file attachments and inline html reports, \n        from within R. SMTP Authentication and SSL/STARTTLS is implemented using curl.",
+        "Authors@R": "c(\n        person(\"Olaf\", \"Mersmann\", role=c(\"aut\", \"cre\"),\n               comment = c(ORCID = \"0000-0002-7720-4939\"),\n               email = \"olafm@p-value.net\"),\n        person(\"Quinn\", \"Weber\", role=\"ctb\"),\n        person(\"Marius\", \"Barth\", role = \"ctb\",\n               comment = c(ORCID = \"0000-0002-3421-6665\")),\n        person(\"Are\", \"Edvardsen\", role = \"ctb\",\n               comment = c(ORCID = \"0000-0002-5210-3656\")),\n        person(\"Alexander\", \"Bartel\", role = \"ctb\", \n               comment = c(ORCID = \"0000-0002-1280-6138\"))\n        )",
+        "URL": "https://github.com/olafmersmann/sendmailR",
+        "BugReports": "https://github.com/olafmersmann/sendmailR/issues",
+        "Depends": "R (>= 3.0.0)",
+        "Imports": "base64enc",
+        "Suggests": "curl (>= 4.0), knitr, rmarkdown, htmltools",
+        "License": "GPL-2",
+        "Encoding": "UTF-8",
+        "RoxygenNote": "7.2.3",
+        "VignetteBuilder": "knitr",
+        "NeedsCompilation": "no",
+        "Packaged": "2023-01-11 18:18:37 UTC; olafm",
+        "Author": "Olaf Mersmann [aut, cre] (<https://orcid.org/0000-0002-7720-4939>),\n  Quinn Weber [ctb],\n  Marius Barth [ctb] (<https://orcid.org/0000-0002-3421-6665>),\n  Are Edvardsen [ctb] (<https://orcid.org/0000-0002-5210-3656>),\n  Alexander Bartel [ctb] (<https://orcid.org/0000-0002-1280-6138>)",
+        "Maintainer": "Olaf Mersmann <olafm@p-value.net>",
+        "Repository": "CRAN",
+        "Date/Publication": "2023-01-12 09:30:02 UTC",
+        "Built": "R 4.4.3; ; 2026-03-12 14:34:02 UTC; windows"
+      }
+    },
     "shiny": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2830,7 +2857,7 @@
       "checksum": "e205e81fcbf3cfda4f111bd5571a578d"
     },
     "global.R": {
-      "checksum": "9826477ff7ba4a98bc88cebe667d09df"
+      "checksum": "b50d6c5b5941d1adba2617ef25fad8ec"
     },
     "inst/app/config/admin_config.R": {
       "checksum": "641b009ff010a990b35e9748e5e3cf8e"
@@ -2842,7 +2869,7 @@
       "checksum": "ecf9dce9f30dadc7817524eca4c575c0"
     },
     "inst/app/global.R": {
-      "checksum": "8fac9247da301e431641703ca4b562af"
+      "checksum": "a5effcb61fb9dbb34b6df17adffccd04"
     },
     "inst/app/modules/domain/admin_panel.R": {
       "checksum": "6d0fd944ef5b45f82f767db7ff4ed9ec"
@@ -2851,13 +2878,13 @@
       "checksum": "5cd59372d8f83b66782ee6da3d42607c"
     },
     "inst/app/modules/domain/download_handler.R": {
-      "checksum": "b0cf94bfe817533f1b5039db3b07cb60"
+      "checksum": "ea910dc4b3319c0f120f644cdd2346db"
     },
     "inst/app/modules/domain/plot_generation.R": {
       "checksum": "37bdfc0f391f850233092e5bbcd509a3"
     },
     "inst/app/modules/domain/reactive_data.R": {
-      "checksum": "37435768a425c2100deeb9e3d371f394"
+      "checksum": "2f8e6b3aa92bef862896b9763de61cd9"
     },
     "inst/app/modules/domain/ui_reactive.R": {
       "checksum": "0f10e6a9af9646ef0afb87c30a89f1ec"
@@ -2878,7 +2905,7 @@
       "checksum": "f903c53abbf1a51e66d71742ad99c624"
     },
     "inst/app/server.R": {
-      "checksum": "42d4865201cc89285569ad7c7c0e883a"
+      "checksum": "1ecec7237404e3da8dded83c99f926b3"
     },
     "inst/app/ui.R": {
       "checksum": "2ad31f8902f55b503b9e297b9dd49ee9"
@@ -2890,10 +2917,10 @@
       "checksum": "bb8b6e99c913ceaeab2e6583637bd770"
     },
     "inst/app/www/tabitem_data.R": {
-      "checksum": "fc42faaaee2e21dd68a383ef69469141"
+      "checksum": "6be690e0c9a637fd592d6ae51f6baf50"
     },
     "inst/app/www/tabitem_download.R": {
-      "checksum": "30a1ff01702c0ab346728c7bdecba0aa"
+      "checksum": "23fb509c193c96d9b1172a51522e8e35"
     },
     "inst/app/www/tabitem_info.R": {
       "checksum": "1e1b99a8a9b26e94ee7d9ddb795e700d"
@@ -2941,13 +2968,13 @@
       "checksum": "5cd59372d8f83b66782ee6da3d42607c"
     },
     "modules/domain/download_handler.R": {
-      "checksum": "33a51578ea442b88338f66e3d3b0c678"
+      "checksum": "910afe17f53bae2ef7728007549224eb"
     },
     "modules/domain/plot_generation.R": {
       "checksum": "37bdfc0f391f850233092e5bbcd509a3"
     },
     "modules/domain/reactive_data.R": {
-      "checksum": "37435768a425c2100deeb9e3d371f394"
+      "checksum": "2f8e6b3aa92bef862896b9763de61cd9"
     },
     "modules/domain/ui_reactive.R": {
       "checksum": "0f10e6a9af9646ef0afb87c30a89f1ec"
@@ -3004,7 +3031,7 @@
       "checksum": "45dbc2f5cfacbf498cd0e3406dd0cda8"
     },
     "server.R": {
-      "checksum": "9848caaae6112bdd1782815fe30899f9"
+      "checksum": "1ecec7237404e3da8dded83c99f926b3"
     },
     "tests/testthat.R": {
       "checksum": "4cc754b6caf191d681a13b94b2bdbd35"
@@ -3025,10 +3052,10 @@
       "checksum": "bb8b6e99c913ceaeab2e6583637bd770"
     },
     "www/tabitem_data.R": {
-      "checksum": "fc42faaaee2e21dd68a383ef69469141"
+      "checksum": "6be690e0c9a637fd592d6ae51f6baf50"
     },
     "www/tabitem_download.R": {
-      "checksum": "30a1ff01702c0ab346728c7bdecba0aa"
+      "checksum": "23fb509c193c96d9b1172a51522e8e35"
     },
     "www/tabitem_info.R": {
       "checksum": "1e1b99a8a9b26e94ee7d9ddb795e700d"

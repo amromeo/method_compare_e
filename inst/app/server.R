@@ -262,6 +262,7 @@ shinyServer(function(input, output, session) {
 
   observe({
     shinyjs::toggleState("downloadReport", condition = report_ready())
+    shinyjs::toggleState("sendReportEmail", condition = report_ready())
   })
   
   # Keep Stats/Download viewable; only block Plots when data is invalid
@@ -354,6 +355,18 @@ shinyServer(function(input, output, session) {
 
   
   output$downloadReport <- create_download_handler(input, analysis_data, display_data, method_names, test_name, safe_filename, session_id)
+  
+  observeEvent(input$sendReportEmail, {
+    send_report_email(
+      input = input,
+      analysis_data_reactive = analysis_data,
+      display_data_reactive = display_data,
+      method_names = method_names,
+      test_name = test_name,
+      safe_filename = safe_filename,
+      session_id = session_id
+    )
+  }, ignoreInit = TRUE)
   
   # Initialize admin panel (admin users only)
   create_admin_panel_server(input, output, session, session_id)

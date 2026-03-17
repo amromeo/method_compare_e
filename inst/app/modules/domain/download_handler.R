@@ -111,7 +111,7 @@ prepare_report_params <- function(input, analysis_data_reactive, display_data_re
 }
 
 # Render report content
-render_report_content <- function(file, params, input, session_id = "unknown") {
+render_report_content <- function(file, params, format, session_id = "unknown", notify = TRUE, write_error_file = TRUE) {
   tryCatch({
     # Validate report template exists
     if (!file.exists("report.Rmd")) {
@@ -126,12 +126,12 @@ render_report_content <- function(file, params, input, session_id = "unknown") {
     
     # Validate output format
     valid_formats <- c("PDF", "HTML", "Word")
-    if (!input$format %in% valid_formats) {
+    if (!format %in% valid_formats) {
       stop(paste("Invalid output format. Must be one of:", paste(valid_formats, collapse = ", ")))
     }
     
     # Log report generation start
-    log_info(paste("Starting report generation - Format:", input$format), "report_generation", session_id)
+    log_info(paste("Starting report generation - Format:", format), "report_generation", session_id)
     
     # Render the R Markdown document to the appropriate format
     rmarkdown::render(
@@ -139,7 +139,7 @@ render_report_content <- function(file, params, input, session_id = "unknown") {
       output_file = file,
       params = params,
       output_format = switch(
-        input$format,
+        format,
         PDF = rmarkdown::pdf_document(), 
         HTML = rmarkdown::html_document(), 
         Word = rmarkdown::word_document()
@@ -147,21 +147,95 @@ render_report_content <- function(file, params, input, session_id = "unknown") {
       envir = new.env(parent = globalenv())
     )
     
-    log_audit("REPORT_GENERATED", paste("Successfully created", input$format, "report"), session_id = session_id)
+    log_audit("REPORT_GENERATED", paste("Successfully created", format, "report"), session_id = session_id)
+    TRUE
     
   }, error = function(e) {
     error_msg <- paste("Report generation failed:", e$message)
-    log_error_with_context(e$message, "render_report_content", paste("Format:", input$format), session_id)
-    showNotification(error_msg, type = "error", duration = 15)
+    log_error_with_context(e$message, "render_report_content", paste("Format:", format), session_id)
+    if (notify) {
+      showNotification(error_msg, type = "error", duration = 15)
+    }
     
-    # Create a simple error file
-    writeLines(c(
-      "Report Generation Error",
-      paste("Time:", Sys.time()),
-      paste("Error:", e$message),
-      "",
-      "Please check your data and try again."
-    ), file)
+    if (write_error_file) {
+      # Create a simple error file
+      writeLines(c(
+        "Report Generation Error",
+        paste("Time:", Sys.time()),
+        paste("Error:", e$message),
+        "",
+        "Please check your data and try again."
+      ), file)
+    }
+    FALSE
+  })
+}
+
+get_allowed_report_recipients <- function() {
+  c(
+    "diogon@chop.edu",
+    "obstfelda@chop.edu",
+    "lambertm@chop.edu",
+    "nguyenlp@chop.edu"
+  )
+}
+
+send_report_email <- function(input, analysis_data_reactive, display_data_reactive, method_names, test_name, safe_filename, session_id = "unknown") {
+  if (!report_fields_complete(input, notify = TRUE)) {
+    return(invisible(FALSE))
+  }
+  
+  recipients <- input$emailRecipients
+  if (is.null(recipients) || length(recipients) == 0) {
+    showNotification("Select at least one email recipient.", type = "error")
+    return(invisible(FALSE))
+  }
+  
+  allowed <- get_allowed_report_recipients()
+  if (!all(recipients %in% allowed)) {
+    showNotification("One or more selected recipients are not allowed.", type = "error")
+    return(invisible(FALSE))
+  }
+  
+  params <- prepare_report_params(input, analysis_data_reactive, display_data_reactive, method_names, test_name)
+  tmp_pdf <- tempfile(pattern = "method_compare_report_", fileext = ".pdf")
+  ok <- render_report_content(tmp_pdf, params, format = "PDF", session_id = session_id, notify = FALSE, write_error_file = FALSE)
+  
+  if (!isTRUE(ok) || !file.exists(tmp_pdf) || isTRUE(file.info(tmp_pdf)$size <= 0)) {
+    showNotification("Could not generate PDF for email attachment.", type = "error")
+    return(invisible(FALSE))
+  }
+  
+  sender <- Sys.getenv("REPORT_FROM_EMAIL", unset = "clinical-diagnostics@chop.edu")
+  smtp_server <- Sys.getenv("REPORT_SMTP_SERVER", unset = "mailrouter.chop.edu")
+  subject <- if (!is.null(input$emailSubject) && nzchar(trimws(input$emailSubject))) input$emailSubject else "CHOP Coagulation Report"
+  body_text <- if (!is.null(input$emailBody) && nzchar(trimws(input$emailBody))) input$emailBody else "Please see attached PDF report."
+  attachment_name <- paste0(safe_filename(test_name()), "_", Sys.Date(), ".pdf")
+  
+  msg_body <- sendmailR::mime_part(body_text)
+  msg_body[["headers"]][["Content-Type"]] <- "text/plain; charset=utf-8"
+  msg_attachment <- sendmailR::mime_part(tmp_pdf, name = attachment_name)
+  
+  tryCatch({
+    sendmailR::sendmail(
+      from = sender,
+      to = recipients,
+      subject = subject,
+      msg = list(msg_body, msg_attachment),
+      control = list(smtpServer = smtp_server)
+    )
+    
+    log_audit(
+      "REPORT_EMAIL_SENT",
+      paste("Recipients:", paste(recipients, collapse = ","), "| Subject:", subject),
+      session_id = session_id
+    )
+    showNotification("Email sent successfully.", type = "message")
+    TRUE
+  }, error = function(e) {
+    log_error_with_context(e$message, "send_report_email", paste("Recipients:", paste(recipients, collapse = ",")), session_id)
+    showNotification(paste("Failed to send email:", e$message), type = "error", duration = 12)
+    FALSE
   })
 }
 
@@ -176,7 +250,7 @@ create_download_handler <- function(input, analysis_data_reactive, display_data_
         return(invisible(NULL))
       }
       params <- prepare_report_params(input, analysis_data_reactive, display_data_reactive, method_names, test_name)
-      render_report_content(file, params, input, session_id)
+      render_report_content(file, params, format = input$format, session_id = session_id, notify = TRUE, write_error_file = TRUE)
     }
   )
 }
