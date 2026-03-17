@@ -20,16 +20,44 @@ sample_hot_input <- function() {
 }
 
 # Source modules
-source("modules/logging.R")
-source("modules/log_viewer.R")
-source("modules/admin_panel.R")
-source("modules/error_handling.R")
-source("modules/reactive_data.R")
-source("modules/data_processing.R")
-source("modules/plot_generation.R")
-source("modules/ui_reactive.R")
-source("modules/download_handler.R")
-source("modules/validation.R")
+source("modules/infra/logging.R")
+source("modules/infra/log_viewer.R")
+source("modules/infra/config_loader.R")
+source("modules/infra/error_handling.R")
+
+source("modules/domain/admin_panel.R")
+source("modules/domain/reactive_data.R")
+source("modules/domain/data_processing.R")
+source("modules/domain/plot_generation.R")
+source("modules/domain/ui_reactive.R")
+source("modules/domain/download_handler.R")
+source("modules/domain/validation.R")
+
+# Helpers for HOT data seeds
+default_hot_table <- function(limit = 0.15) {
+  data.frame(
+    'Sample' = rep(NA_character_, 10),
+    'X' = rep(NA_real_, 10),
+    'Y' = rep(NA_real_, 10),
+    'Abs_Diff' = rep(NA_real_, 10),
+    'Per_Diff' = rep(NA_real_, 10),
+    'Pass_Fail' = rep(NA_character_, 10),
+    'Limit_per' = rep(limit, 10)
+  )
+}
+
+sample_hot_table <- function() {
+  data.frame(
+    Sample = paste0("S", sprintf("%02d", 1:12)),
+    X = c(10.1, 11.5, 9.8, 12.0, 10.9, 11.1, 9.9, 10.2, 11.8, 10.7, 12.4, 11.0),
+    Y = c(10.3, 11.6, 9.9, 12.4, 11.1, 11.2, 10.1, 10.1, 11.6, 10.9, 12.5, 10.8),
+    Abs_Diff = NA_real_,
+    Per_Diff = NA_real_,
+    Pass_Fail = "",
+    Limit_per = 0.15,
+    stringsAsFactors = FALSE
+  )
+}
 
 shinyServer(function(input, output, session) {
   
@@ -181,13 +209,61 @@ shinyServer(function(input, output, session) {
   # Create clear reactive data pipeline
   data_store <- create_reactive_data_store()
   
+  # HOT data source with presets/reset
+  hot_data <- reactiveVal(default_hot_table())
+  
+  observeEvent(input$hot, {
+    if (!is.null(input$hot)) {
+      hot_data(hot_to_r(input$hot))
+    }
+  }, ignoreNULL = TRUE)
+  
+  observeEvent(input$load_sample, {
+    hot_data(sample_hot_table())
+    log_user_interaction("SAMPLE_LOADED", "hot", "Sample dataset loaded", session_id)
+  })
+  
+  observeEvent(input$reset_hot, {
+    hot_data(default_hot_table())
+    log_user_interaction("HOT_RESET", "hot", "Table reset to defaults", session_id)
+  })
+  
   # Define reactive chain: raw → processed → analysis/display
-  raw_data <- create_raw_data_reactive(input)
+  raw_data <- create_raw_data_reactive(hot_data_reactive = hot_data)
   processed_data <- create_processed_data_reactive(raw_data, input, session_id)
   analysis_data <- create_analysis_data_reactive(processed_data)
   display_data <- create_display_data_reactive(processed_data)
   
+  validation_results <- reactive({
+    df <- processed_data()
+    if (is.null(df)) return(list(valid = FALSE, errors = "No data"))
+    validate_medical_data(df, "Data table")
+  })
   
+  validation_ok <- reactive({
+    vr <- validation_results()
+    is.list(vr) && isTRUE(vr$valid)
+  })
+  
+  valid_pairs <- reactive({
+    df <- processed_data()
+    if (is.null(df)) return(0)
+    sum(!is.na(df$X) & !is.na(df$Y))
+  })
+  
+  entered_rows <- reactive({
+    df <- processed_data()
+    if (is.null(df)) return(0)
+    sum(!is.na(df$X) | !is.na(df$Y))
+  })
+  
+  # Prevent navigation to downstream tabs until data is valid
+  observeEvent(input$tabs, {
+    if (input$tabs %in% c("plots", "stats", "download") && !validation_ok()) {
+      updateTabItems(session, "tabs", "data")
+      showNotification("Need \u22652 numeric X/Y pairs before viewing plots, stats, or downloads.", type = "error")
+    }
+  }, ignoreInit = TRUE)
 
   output$dynamicReagentLot <- create_dynamic_reagent_lot_render(input)
   
@@ -203,7 +279,19 @@ shinyServer(function(input, output, session) {
   
   # Use display data for tables and reports
   mod_data <- display_data
-  
+
+  output$valid_pairs_badge <- renderText({
+    paste0(valid_pairs(), " valid pairs")
+  })
+
+  output$row_count_badge <- renderText({
+    paste0(entered_rows(), " rows with data")
+  })
+
+  output$limit_badge <- renderText({
+    limit_val <- if (is.null(input$limitValue)) 0.15 else input$limitValue
+    paste0("Limit: ", scales::percent(limit_val, accuracy = 0.1))
+  })
 
   output$kableTable <- renderText({
     df <- label_xy_columns(mod_data(), method_names())
@@ -215,19 +303,11 @@ shinyServer(function(input, output, session) {
 
 
   output$hot <- renderRHandsontable({
-    # Render from seed only to avoid edit->rerender feedback loops.
-    a <- hot_seed()
-    m <- method_names()
-    required_cols <- c("Sample", "X", "Y")
-    
-    # If no seed data, create default table structure
-    if (is.null(a) || nrow(a) == 0 || !all(required_cols %in% names(a))) {
-      a <- default_hot_input()
+    # Always show a table structure for data entry
+    a <- hot_data()
+    if (is.null(a) || nrow(a) == 0) {
+      a <- default_hot_table()
     }
-
-    # Enforce stable schema before applying HOT column formatting.
-    a <- a[, required_cols, drop = FALSE]
-
     rhandsontable(a
                   , height = 482
                   , rowHeaders = NULL
@@ -237,7 +317,19 @@ shinyServer(function(input, output, session) {
       hot_col(col = 3, format = '0.00', type = 'numeric') %>%
       hot_cols(colWidths = ifelse(names(a) %in% c("Sample", "X", "Y"), 150, 0.1))
 
-    
+      
+  })
+  
+  output$validation_alert <- renderUI({
+    vr <- validation_results()
+    if (is.null(vr)) return(NULL)
+    if (isTRUE(vr$valid)) {
+      div(class = "alert alert-success", icon("check-circle"), "Data ready for plots and reports.")
+    } else {
+      div(class = "alert alert-warning",
+          icon("exclamation-triangle"), "Please fix the following before continuing:",
+          tags$ul(lapply(vr$errors, tags$li)))
+    }
   })
   
   
