@@ -8,6 +8,7 @@ dashboardPage(
                ),
       menuItem("Excel View", tabName = "modData", icon = icon("dashboard")), # New tab for modified data
       menuItem("Plots", tabName = "plots",
+               startExpanded = TRUE,
                icon = icon("line-chart", "fa-lg"),
                menuSubItem("Scatter Plot", tabName = "subitem2"),
                menuSubItem("Coefficient Plot", tabName = "subitem3"),

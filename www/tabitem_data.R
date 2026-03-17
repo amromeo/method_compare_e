@@ -32,14 +32,10 @@ tabItem_data <- function() {
         textInput("customTestInput", "Enter Custom Test Name:")
       )
       ,
-      tags$details(
-        tags$summary("Metadata (optional)"),
-        br(),
-        fluidRow(
-          column(4, textInput("reagentLotInput", label = "Reagent Lot:")),
-          column(4, textInput("expirationInput", label = "Expiration:")),
-          column(4, dateInput("dateInput", label = "Date:", value = Sys.Date()))
-        )
+      fluidRow(
+        column(4, textInput("reagentLotInput", label = "Reagent Lot:")),
+        column(4, textInput("expirationInput", label = "Expiration:")),
+        column(4, dateInput("dateInput", label = "Date:", value = Sys.Date()))
       )
     ),
     fluidRow(
