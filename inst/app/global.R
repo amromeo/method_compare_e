@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)
 library(mcr)
 library(shinydashboard)
 library(rhandsontable)

@@ -38,15 +38,16 @@ get_missing_required_report_fields <- function(input) {
   missing
 }
 
-assert_required_report_fields <- function(input, notify = FALSE) {
+report_fields_complete <- function(input, notify = FALSE) {
   missing <- get_missing_required_report_fields(input)
   if (length(missing) > 0) {
     msg <- paste("Please complete required fields before downloading:", paste(missing, collapse = ", "))
     if (notify) {
       showNotification(msg, type = "error", duration = 10)
     }
-    stop(msg)
+    return(FALSE)
   }
+  TRUE
 }
 
 # Generate filename for download
@@ -153,11 +154,12 @@ render_report_content <- function(file, params, input, session_id = "unknown") {
 create_download_handler <- function(input, analysis_data_reactive, display_data_reactive, method_names, test_name, safe_filename, session_id = "unknown") {
   downloadHandler(
     filename = function() {
-      assert_required_report_fields(input, notify = TRUE)
       generate_report_filename(input, test_name, method_names, safe_filename)
     },
     content = function(file) {
-      assert_required_report_fields(input, notify = TRUE)
+      if (!report_fields_complete(input, notify = TRUE)) {
+        return(invisible(NULL))
+      }
       params <- prepare_report_params(input, analysis_data_reactive, display_data_reactive, method_names, test_name)
       render_report_content(file, params, input, session_id)
     }

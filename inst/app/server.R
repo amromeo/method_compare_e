@@ -255,6 +255,14 @@ shinyServer(function(input, output, session) {
     if (is.null(df)) return(0)
     sum(!is.na(df$X) | !is.na(df$Y))
   })
+
+  report_ready <- reactive({
+    length(get_missing_required_report_fields(input)) == 0
+  })
+
+  observe({
+    shinyjs::toggleState("downloadReport", condition = report_ready())
+  })
   
   # Prevent navigation to downstream tabs until data is valid
   observeEvent(input$tabs, {
