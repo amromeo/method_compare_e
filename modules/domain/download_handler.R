@@ -3,19 +3,28 @@
 
 # Required fields for report generation (download-only gating)
 get_missing_required_report_fields <- function(input) {
+  is_blank <- function(x) {
+    if (is.null(x) || length(x) == 0) return(TRUE)
+    if (is.character(x)) return(all(trimws(x) == ""))
+    FALSE
+  }
+  is_missing_date <- function(x) {
+    is.null(x) || length(x) == 0 || all(is.na(x))
+  }
+
   missing <- character(0)
   
-  if (is.null(input$testInput) || input$testInput == "") {
+  if (is_blank(input$testInput)) {
     missing <- c(missing, "Select Test")
   }
   
-  if (!is.null(input$testInput) && input$testInput == "Other") {
-    if (is.null(input$customTestInput) || trimws(input$customTestInput) == "") {
+  if (!is_blank(input$testInput) && identical(input$testInput, "Other")) {
+    if (is_blank(input$customTestInput)) {
       missing <- c(missing, "Custom Test Name")
     }
   }
   
-  if (is.null(input$comparisons) || input$comparisons == "") {
+  if (is_blank(input$comparisons)) {
     missing <- c(missing, "Comparison")
   }
   
@@ -23,15 +32,15 @@ get_missing_required_report_fields <- function(input) {
     missing <- c(missing, "Cutoff (%)")
   }
   
-  if (is.null(input$reagentLotInput) || trimws(input$reagentLotInput) == "") {
+  if (is_blank(input$reagentLotInput)) {
     missing <- c(missing, "Reagent Lot")
   }
   
-  if (is.null(input$expirationInput) || trimws(input$expirationInput) == "") {
+  if (is_blank(input$expirationInput)) {
     missing <- c(missing, "Expiration")
   }
   
-  if (is.null(input$dateInput) || is.na(input$dateInput)) {
+  if (is_missing_date(input$dateInput)) {
     missing <- c(missing, "Date")
   }
   

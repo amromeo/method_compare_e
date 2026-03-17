@@ -46,7 +46,7 @@ tabItem_data <- function() {
       fluidRow(
         column(4, textInput("reagentLotInput", label = "Reagent Lot *")),
         column(4, textInput("expirationInput", label = "Expiration *")),
-        column(4, dateInput("dateInput", label = "Date *", value = NA))
+        column(4, dateInput("dateInput", label = "Date *", value = Sys.Date()))
       )
     ),
     fluidRow(
