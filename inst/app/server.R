@@ -231,13 +231,6 @@ shinyServer(function(input, output, session) {
     }
   }, ignoreInit = TRUE)
 
-  observeEvent(input$jump_data, { updateTabItems(session, "tabs", "data") })
-  observeEvent(input$jump_plots, { updateTabItems(session, "tabs", "plots") })
-  observeEvent(input$jump_stats, { updateTabItems(session, "tabs", "stats") })
-  observeEvent(input$jump_download, { updateTabItems(session, "tabs", "download") })
-
-  
-
   output$dynamicReagentLot <- create_dynamic_reagent_lot_render(input)
   
   output$dynamicExpiration <- create_dynamic_expiration_render(input)
@@ -292,14 +285,6 @@ shinyServer(function(input, output, session) {
       
   })
   
-  output$clean_table <- DT::renderDataTable({
-    df <- display_data()
-    if (is.null(df) || nrow(df) == 0) {
-      return(data.frame(Message = "No validated data yet"))
-    }
-    DT::datatable(df, options = list(paging = FALSE, searching = FALSE, info = FALSE))
-  })
-
   output$validation_alert <- renderUI({
     vr <- validation_results()
     if (is.null(vr)) return(NULL)
