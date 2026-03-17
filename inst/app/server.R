@@ -264,11 +264,11 @@ shinyServer(function(input, output, session) {
     shinyjs::toggleState("downloadReport", condition = report_ready())
   })
   
-  # Prevent navigation to downstream tabs until data is valid
+  # Keep Stats/Download viewable; only block Plots when data is invalid
   observeEvent(input$tabs, {
-    if (input$tabs %in% c("plots", "stats", "download") && !validation_ok()) {
+    if (identical(input$tabs, "plots") && !validation_ok()) {
       updateTabItems(session, "tabs", "data")
-      showNotification("Need \u22652 numeric X/Y pairs before viewing plots, stats, or downloads.", type = "error")
+      showNotification("Need \u22652 numeric X/Y pairs before viewing plots.", type = "error")
     }
   }, ignoreInit = TRUE)
 
