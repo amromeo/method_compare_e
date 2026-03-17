@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "locale": "en_US",
+  "platform": "4.4.0",
+  "metadata": {
+    "appmode": "shiny",
+    "primary_rmd": null,
+    "primary_html": null,
+    "has_parameters": false
+  },
+  "packages": {
+    "shiny": {},
+    "shinydashboard": {},
+    "rhandsontable": {},
+    "mcr": {},
+    "dplyr": {},
+    "rmarkdown": {},
+    "readxl": {},
+    "scales": {},
+    "kableExtra": {},
+    "pander": {},
+    "jsonlite": {},
+    "DT": {},
+    "testthat": {},
+    "knitr": {},
+    "systemfonts": {},
+    "textshaping": {},
+    "svglite": {}
+  },
+  "files": {
+    "app.R": {},
+    "global.R": {},
+    "server.R": {},
+    "ui.R": {},
+    "www/": {},
+    "modules/": {},
+    "inst/app/": {}
+  }
+}
