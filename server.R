@@ -305,6 +305,7 @@ shinyServer(function(input, output, session) {
   output$hot <- renderRHandsontable({
     # Always show a table structure for data entry
     a <- hot_data()
+    m <- method_names()
     if (is.null(a) || nrow(a) == 0) {
       a <- default_hot_table()
     }
