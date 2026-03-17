@@ -2,9 +2,10 @@
 # Contains render functions for plots and summary output
 
 # Create render function for Bland-Altman plot
-create_bland_altman_plot_render <- function(analysis_data_reactive, input) {
+create_bland_altman_plot_render <- function(analysis_data_reactive, input, method_names_reactive) {
   renderPlot({
     a <- analysis_data_reactive()
+    m <- method_names_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -18,7 +19,7 @@ create_bland_altman_plot_render <- function(analysis_data_reactive, input) {
     
     # Use safe mcreg wrapper with data frame
     result <- safe_mcreg(a, 
-                        mref.name = input$m1, mtest.name = input$m2, 
+                        mref.name = m$m1, mtest.name = m$m2, 
                         na.rm = TRUE, 
                         context = "Bland-Altman regression")
     
@@ -34,9 +35,10 @@ create_bland_altman_plot_render <- function(analysis_data_reactive, input) {
 }
 
 # Create render function for method comparison plot
-create_method_comparison_plot_render <- function(analysis_data_reactive, input) {
+create_method_comparison_plot_render <- function(analysis_data_reactive, input, method_names_reactive) {
   renderPlot({
     a <- analysis_data_reactive()
+    m <- method_names_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -73,8 +75,8 @@ create_method_comparison_plot_render <- function(analysis_data_reactive, input) 
     safe_plot(function() {
       MCResult.plot(result$result, ci.area = input$ciarea,
                     add.legend = input$legend, identity = input$identity,
-                    add.cor = input$addcor, x.lab = input$m1,
-                    y.lab = input$m2, cor.method = input$cormet,
+                    add.cor = input$addcor, x.lab = m$m1,
+                    y.lab = m$m2, cor.method = input$cormet,
                     equal.axis = TRUE, add.grid = TRUE, 
                     na.rm = TRUE)
     }, a, "Method comparison plot generation")
@@ -82,9 +84,10 @@ create_method_comparison_plot_render <- function(analysis_data_reactive, input) 
 }
 
 # Create render function for fit comparison plot
-create_fit_comparison_plot_render <- function(analysis_data_reactive, input) {
+create_fit_comparison_plot_render <- function(analysis_data_reactive, input, method_names_reactive) {
   renderPlot({
     a <- analysis_data_reactive()
+    m <- method_names_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -110,7 +113,7 @@ create_fit_comparison_plot_render <- function(analysis_data_reactive, input) {
                         method.ci = input$cimethod,
                         method.bootstrap.ci = input$metbootci, 
                         slope.measure = "radian",
-                        mref.name = input$m1, mtest.name = input$m2, 
+                        mref.name = m$m1, mtest.name = m$m2, 
                         na.rm = TRUE,
                         context = "Fit comparison regression")
     
@@ -126,9 +129,10 @@ create_fit_comparison_plot_render <- function(analysis_data_reactive, input) {
 }
 
 # Create render function for summary output
-create_summary_render <- function(analysis_data_reactive, input) {
+create_summary_render <- function(analysis_data_reactive, input, method_names_reactive) {
   renderPrint({
     a <- analysis_data_reactive()
+    m <- method_names_reactive()
     if (is.null(a)) {
       return(NULL)
     }
@@ -156,7 +160,7 @@ create_summary_render <- function(analysis_data_reactive, input) {
                         method.ci = input$cimethod,
                         method.bootstrap.ci = input$metbootci, 
                         slope.measure = "radian",
-                        mref.name = input$m1, mtest.name = input$m2, 
+                        mref.name = m$m1, mtest.name = m$m2, 
                         na.rm = TRUE,
                         context = "Summary statistics regression")
     

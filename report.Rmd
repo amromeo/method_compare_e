@@ -80,6 +80,10 @@ library(mcr)
 library(pander)
 df <- params$tabledata
 
+# Safety net: ensure table columns match selected method names
+if ("X" %in% names(df)) names(df)[names(df) == "X"] <- params$m1
+if ("Y" %in% names(df)) names(df)[names(df) == "Y"] <- params$m2
+
 if(knitr::is_html_output()) {
       tableHTML <- generateKableTable(df, "html")
      cat(tableHTML)# <- generateKableTable(df, "html")
