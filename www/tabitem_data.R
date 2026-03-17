@@ -10,7 +10,12 @@ tabItem_data <- function() {
       fluidRow(
         column(
           4,
-          selectInput("testInput", "Select Test", choices = get_test_choices())
+          selectInput(
+            "testInput",
+            "Select Test *",
+            choices = c("-- Select Test --" = "", get_test_choices()),
+            selected = ""
+          )
         ),
         column(
           4,
@@ -20,22 +25,28 @@ tabItem_data <- function() {
           4,
           radioButtons(
             "comparisons",
-            "Comparison",
-            choices = c("old-new", "mil1-mil2", "mil1-mil3", "mil2-mil3"),
-            selected = "old-new",
+            "Comparison *",
+            choices = c(
+              "-- Select Comparison --" = "",
+              "old-new" = "old-new",
+              "mil1-mil2" = "mil1-mil2",
+              "mil1-mil3" = "mil1-mil3",
+              "mil2-mil3" = "mil2-mil3"
+            ),
+            selected = "",
             inline = TRUE
           )
         )
       ),
       conditionalPanel(
         condition = "input.testInput == 'Other'",
-        textInput("customTestInput", "Enter Custom Test Name:")
+        textInput("customTestInput", "Enter Custom Test Name *")
       )
       ,
       fluidRow(
-        column(4, textInput("reagentLotInput", label = "Reagent Lot:")),
-        column(4, textInput("expirationInput", label = "Expiration:")),
-        column(4, dateInput("dateInput", label = "Date:", value = Sys.Date()))
+        column(4, textInput("reagentLotInput", label = "Reagent Lot *")),
+        column(4, textInput("expirationInput", label = "Expiration *")),
+        column(4, dateInput("dateInput", label = "Date *", value = NA))
       )
     ),
     fluidRow(

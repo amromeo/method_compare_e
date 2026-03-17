@@ -1,6 +1,54 @@
 # Download Handler Module
 # Contains report generation functionality and file handling
 
+# Required fields for report generation (download-only gating)
+get_missing_required_report_fields <- function(input) {
+  missing <- character(0)
+  
+  if (is.null(input$testInput) || input$testInput == "") {
+    missing <- c(missing, "Select Test")
+  }
+  
+  if (!is.null(input$testInput) && input$testInput == "Other") {
+    if (is.null(input$customTestInput) || trimws(input$customTestInput) == "") {
+      missing <- c(missing, "Custom Test Name")
+    }
+  }
+  
+  if (is.null(input$comparisons) || input$comparisons == "") {
+    missing <- c(missing, "Comparison")
+  }
+  
+  if (is.null(input$limitValue) || !is.numeric(input$limitValue) || is.na(input$limitValue)) {
+    missing <- c(missing, "Cutoff (%)")
+  }
+  
+  if (is.null(input$reagentLotInput) || trimws(input$reagentLotInput) == "") {
+    missing <- c(missing, "Reagent Lot")
+  }
+  
+  if (is.null(input$expirationInput) || trimws(input$expirationInput) == "") {
+    missing <- c(missing, "Expiration")
+  }
+  
+  if (is.null(input$dateInput) || is.na(input$dateInput)) {
+    missing <- c(missing, "Date")
+  }
+  
+  missing
+}
+
+assert_required_report_fields <- function(input, notify = FALSE) {
+  missing <- get_missing_required_report_fields(input)
+  if (length(missing) > 0) {
+    msg <- paste("Please complete required fields before downloading:", paste(missing, collapse = ", "))
+    if (notify) {
+      showNotification(msg, type = "error", duration = 10)
+    }
+    stop(msg)
+  }
+}
+
 # Generate filename for download
 generate_report_filename <- function(input, test_name, method_names, safe_filename, session_id = "unknown") {
   req(input$format, test_name())
@@ -105,9 +153,11 @@ render_report_content <- function(file, params, input, session_id = "unknown") {
 create_download_handler <- function(input, analysis_data_reactive, display_data_reactive, method_names, test_name, safe_filename, session_id = "unknown") {
   downloadHandler(
     filename = function() {
+      assert_required_report_fields(input, notify = TRUE)
       generate_report_filename(input, test_name, method_names, safe_filename)
     },
     content = function(file) {
+      assert_required_report_fields(input, notify = TRUE)
       params <- prepare_report_params(input, analysis_data_reactive, display_data_reactive, method_names, test_name)
       render_report_content(file, params, input, session_id)
     }

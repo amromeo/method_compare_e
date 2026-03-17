@@ -189,13 +189,12 @@ shinyServer(function(input, output, session) {
   })
   
   method_names <- reactive({
-    req(input$comparisons)
     switch(input$comparisons,
            "old-new"    = list(m1 = "old",  m2 = "new"),
            "mil1-mil2"  = list(m1 = "mil1", m2 = "mil2"),
            "mil1-mil3"  = list(m1 = "mil1", m2 = "mil3"),
            "mil2-mil3"  = list(m1 = "mil2", m2 = "mil3"),
-           list(m1 = "method1", m2 = "method2"))
+           list(m1 = "X", m2 = "Y"))
   })
 
   label_xy_columns <- function(df, m) {
