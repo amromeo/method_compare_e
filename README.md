@@ -8,8 +8,9 @@ Packaged Shiny app for CHOP Coagulation method comparison & bias estimation.
 3. Tests: `devtools::test()` (uses `tests/testthat`).
 
 ## Posit Connect
-Deploy by pushing the package bundle or selecting `inst/app` as the content
-directory. Entry point is `methodCompare::run_app()`.
+Deploy to Posit Connect from the repo root (now with `app.R` at top-level) or
+bundle the package; entry point is `app.R` which calls `shinyAppDir(\"inst/app\")`
+or `methodCompare::run_app()`.
 
 ## Structure
 - `inst/app` — Shiny app code (ui/server/global, modules, www assets, config).

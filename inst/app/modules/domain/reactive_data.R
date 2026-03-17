@@ -15,8 +15,17 @@ create_reactive_data_store <- function() {
 }
 
 # Create reactive for raw data input (from HOT table)
-create_raw_data_reactive <- function(input) {
+# Accepts either a reactive hot data source or falls back to input$hot
+create_raw_data_reactive <- function(hot_data_reactive = NULL, input = NULL) {
   reactive({
+    # Determine source
+    hot_df <- NULL
+    if (!is.null(hot_data_reactive)) {
+      hot_df <- hot_data_reactive()
+    } else if (!is.null(input) && !is.null(input$hot)) {
+      hot_df <- hot_to_r(input$hot)
+    }
+
     # Always provide a default structure, even without HOT input
     default_structure <- data.frame(
       Sample = rep(NA_character_, 10),
@@ -25,12 +34,11 @@ create_raw_data_reactive <- function(input) {
     )
     
     # If no HOT input yet, return default structure
-    if (is.null(input$hot)) {
+    if (is.null(hot_df)) {
       return(default_structure)
     }
     
-    # Get data directly from HOT table
-    raw_df <- hot_to_r(input$hot)
+    raw_df <- hot_df
     
     # Ensure we have the required columns
     if (is.null(raw_df) || !all(c("Sample", "X", "Y") %in% names(raw_df))) {
