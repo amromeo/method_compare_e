@@ -189,13 +189,12 @@ shinyServer(function(input, output, session) {
   })
   
   method_names <- reactive({
-    req(input$comparisons)
     switch(input$comparisons,
            "old-new"    = list(m1 = "old",  m2 = "new"),
            "mil1-mil2"  = list(m1 = "mil1", m2 = "mil2"),
            "mil1-mil3"  = list(m1 = "mil1", m2 = "mil3"),
            "mil2-mil3"  = list(m1 = "mil2", m2 = "mil3"),
-           list(m1 = "method1", m2 = "method2"))
+           list(m1 = "X", m2 = "Y"))
   })
 
   label_xy_columns <- function(df, m) {
@@ -256,12 +255,20 @@ shinyServer(function(input, output, session) {
     if (is.null(df)) return(0)
     sum(!is.na(df$X) | !is.na(df$Y))
   })
+
+  report_ready <- reactive({
+    length(get_missing_required_report_fields(input)) == 0
+  })
+
+  observe({
+    shinyjs::toggleState("downloadReport", condition = report_ready())
+  })
   
-  # Prevent navigation to downstream tabs until data is valid
+  # Keep Stats/Download viewable; only block Plots when data is invalid
   observeEvent(input$tabs, {
-    if (input$tabs %in% c("plots", "stats", "download") && !validation_ok()) {
+    if (identical(input$tabs, "plots") && !validation_ok()) {
       updateTabItems(session, "tabs", "data")
-      showNotification("Need \u22652 numeric X/Y pairs before viewing plots, stats, or downloads.", type = "error")
+      showNotification("Need \u22652 numeric X/Y pairs before viewing plots.", type = "error")
     }
   }, ignoreInit = TRUE)
 
@@ -305,6 +312,7 @@ shinyServer(function(input, output, session) {
   output$hot <- renderRHandsontable({
     # Always show a table structure for data entry
     a <- hot_data()
+    m <- method_names()
     if (is.null(a) || nrow(a) == 0) {
       a <- default_hot_table()
     }

@@ -4,7 +4,9 @@
 # Create render function for limit value UI
 create_limit_value_ui_render <- function(input, default_limits) {
   renderUI({
-    req(input$testInput)
+    if (is.null(input$testInput) || input$testInput == "") {
+      return(helpText("Select Test to auto-populate required cutoff."))
+    }
     
     init_limit <- if (input$testInput %in% names(default_limits)) {
       default_limits[[input$testInput]]
@@ -12,7 +14,7 @@ create_limit_value_ui_render <- function(input, default_limits) {
       0.15  # fallback if "Other" or unknown
     }
     
-    numericInput("limitValue", "Set % Cutoff", 
+    numericInput("limitValue", "Set % Cutoff * (auto from Test)", 
                  value = init_limit, 
                  min = 0, max = 1, step = 0.01)
   })

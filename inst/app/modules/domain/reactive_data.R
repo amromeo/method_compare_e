@@ -53,6 +53,14 @@ create_raw_data_reactive <- function(hot_data_reactive = NULL, input = NULL) {
 # Create reactive for processed data (validation + calculations)
 create_processed_data_reactive <- function(raw_data_reactive, input, session_id = "unknown") {
   reactive({
+    coerce_limit_value <- function(x, default = 0.15) {
+      if (is.null(x) || length(x) == 0) return(default)
+      if (is.character(x) && all(trimws(x) == "")) return(default)
+      xv <- suppressWarnings(as.numeric(x[1]))
+      if (is.na(xv) || !is.finite(xv)) return(default)
+      xv
+    }
+
     # Get raw data (which always provides default structure)
     raw_df <- raw_data_reactive()
     if (is.null(raw_df) || nrow(raw_df) == 0) {
@@ -68,25 +76,21 @@ create_processed_data_reactive <- function(raw_data_reactive, input, session_id 
       ))
     }
     
-    # Default limit value if not set
-    limit_value <- if (is.null(input$limitValue)) 0.15 else input$limitValue
+    # Default/coerced limit value for all downstream calculations
+    limit_value <- coerce_limit_value(input$limitValue, default = 0.15)
     
-    # Validate limit value (only if it exists)
-    if (!is.null(input$limitValue) && (!is.numeric(input$limitValue) || input$limitValue < 0 || input$limitValue > 1)) {
-      showNotification("Limit value must be between 0 and 1", type = "error")
-      # Return default structure even with invalid limit
-      return(data.frame(
-        'Sample' = rep(NA_character_, 10),
-        'X' = rep(NA_real_, 10),
-        'Y' = rep(NA_real_, 10),
-        'Abs_Diff' = rep(NA_real_, 10),
-        'Per_Diff' = rep(NA_real_, 10),
-        'Pass_Fail' = rep(NA_character_, 10),
-        'Limit_per' = rep(0.15, 10)
-      ))
+    # Validate explicit out-of-range input but keep app responsive with safe fallback
+    if (!is.null(input$limitValue) && length(input$limitValue) > 0 &&
+        !is.na(suppressWarnings(as.numeric(input$limitValue[1])))) {
+      entered_limit <- suppressWarnings(as.numeric(input$limitValue[1]))
+      if (entered_limit < 0 || entered_limit > 1) {
+        showNotification("Limit value must be between 0 and 1", type = "error")
+        limit_value <- 0.15
+      }
     }
-    
+  
     tryCatch({
+      has_user_data <- FALSE
       # Start with raw data and add calculated columns
       processed_df <- raw_df
       processed_df$X <- as.numeric(processed_df$X)
@@ -100,8 +104,9 @@ create_processed_data_reactive <- function(raw_data_reactive, input, session_id 
       
       # Check if user has actually entered data
       valid_pairs <- !is.na(processed_df$X) & !is.na(processed_df$Y)
-      has_user_data <- any(!is.na(processed_df$X) | !is.na(processed_df$Y) | 
-                          (processed_df$Sample != "" & !is.na(processed_df$Sample)), na.rm = TRUE)
+      sample_text <- trimws(as.character(processed_df$Sample))
+      has_user_data <- any(!is.na(processed_df$X) | !is.na(processed_df$Y) |
+                           (!is.na(sample_text) & sample_text != ""), na.rm = TRUE)
       
       # If no user data, return default structure without processing
       if (!has_user_data) {
@@ -161,7 +166,6 @@ create_processed_data_reactive <- function(raw_data_reactive, input, session_id 
       }
       
       # Calculate Pass/Fail status
-      limit_value <- input$limitValue
       processed_df$Pass_Fail <- dplyr::case_when(
         is.na(processed_df$Per_Diff) ~ "",
         is.na(processed_df$X) | is.na(processed_df$Y) ~ "",
@@ -230,7 +234,6 @@ create_display_data_reactive <- function(processed_data_reactive) {
       filter(!is.na(X) & !is.na(Y))
     
     if (nrow(display_df) == 0) {
-      showNotification("Please enter data into the table.", type = "error")
       return(data.frame())
     }
     

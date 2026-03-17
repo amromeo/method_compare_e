@@ -31,6 +31,7 @@ dashboardPage(
     )
   ),
   dashboardBody(
+    shinyjs::useShinyjs(),
     tabItems(
       tabItem_info(),
       tabItem_data(),

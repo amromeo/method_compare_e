@@ -3,3 +3,4 @@
 ^inst/app/logs$
 ^mcr.pdf$
 ^combined_output\\.txt$
+^\.Rproj\.user$
