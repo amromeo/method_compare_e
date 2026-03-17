@@ -215,9 +215,9 @@ shinyServer(function(input, output, session) {
                   , height = 482
                   , rowHeaders = NULL
                   , colHeaders = c("Sample", m$m1, m$m2, "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")) %>%
-      hot_col(col = "Sample") %>%
-      hot_col(col = "X", format = '0.00', type = 'numeric') %>%
-      hot_col(col = "Y", format = '0.00', type = 'numeric') %>%
+      hot_col(col = 1) %>%
+      hot_col(col = 2, format = '0.00', type = 'numeric') %>%
+      hot_col(col = 3, format = '0.00', type = 'numeric') %>%
       hot_cols(colWidths = ifelse(names(a) %in% c("Sample", "X", "Y"), 150, 0.1))
 
     
