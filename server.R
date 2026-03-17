@@ -223,14 +223,14 @@ shinyServer(function(input, output, session) {
   
   
   
-  output$plot1 <- create_bland_altman_plot_render(analysis_data, input)
+  output$plot1 <- create_bland_altman_plot_render(analysis_data, input, method_names)
   
-  output$plot2 <- create_method_comparison_plot_render(analysis_data, input)
+  output$plot2 <- create_method_comparison_plot_render(analysis_data, input, method_names)
 
-  output$plot3 <- create_fit_comparison_plot_render(analysis_data, input)  
+  output$plot3 <- create_fit_comparison_plot_render(analysis_data, input, method_names)  
   
   
-  output$summary <- create_summary_render(analysis_data, input)
+  output$summary <- create_summary_render(analysis_data, input, method_names)
   
 
   
