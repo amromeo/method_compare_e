@@ -193,9 +193,10 @@ shinyServer(function(input, output, session) {
     # Always show a table structure for data entry
     a <- processed_data()
     m <- method_names()
+    required_cols <- c("Sample", "X", "Y", "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")
     
     # If no processed data, create default table structure
-    if (is.null(a) || nrow(a) == 0) {
+    if (is.null(a) || nrow(a) == 0 || !all(required_cols %in% names(a))) {
       a <- data.frame(
         'Sample' = rep(NA_character_, 10),
         'X' = rep(NA_real_, 10),
@@ -205,15 +206,19 @@ shinyServer(function(input, output, session) {
         'Pass_Fail' = rep(NA_character_, 10),
         'Limit_per' = rep(0.15, 10)
       )
-    } 
+    }
+
+    # Enforce stable schema before applying HOT column formatting.
+    a <- a[, required_cols, drop = FALSE]
+
     rhandsontable(a
                   , height = 482
                   , rowHeaders = NULL
                   , colHeaders = c("Sample", m$m1, m$m2, "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")) %>%
-      hot_col(col = colnames(a)[1]) %>%
-      hot_col(col = colnames(a)[2], format = '0.00', type = 'numeric') %>%
-      hot_col(col = colnames(a)[3], format = '0.00', type = 'numeric') %>%
-      hot_cols(colWidths = ifelse(!names(a) %in% c('Abs_Diff', 'Per_Diff', 'Pass_Fail','Limit_per') == T, 150, 0.1))
+      hot_col(col = "Sample") %>%
+      hot_col(col = "X", format = '0.00', type = 'numeric') %>%
+      hot_col(col = "Y", format = '0.00', type = 'numeric') %>%
+      hot_cols(colWidths = ifelse(names(a) %in% c("Sample", "X", "Y"), 150, 0.1))
 
     
   })
