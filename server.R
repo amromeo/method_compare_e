@@ -1,6 +1,24 @@
 
 safe_filename <- function(x) gsub("[^a-zA-Z0-9_\\-]", "_", x)
 
+# Seed table for HOT input-only editing
+default_hot_input <- function(rows = 10) {
+  data.frame(
+    Sample = rep(NA_character_, rows),
+    X = rep(NA_real_, rows),
+    Y = rep(NA_real_, rows)
+  )
+}
+
+sample_hot_input <- function() {
+  data.frame(
+    Sample = paste0("S", sprintf("%02d", 1:12)),
+    X = c(10.1, 11.5, 9.8, 12.0, 10.9, 11.1, 9.9, 10.2, 11.8, 10.7, 12.4, 11.0),
+    Y = c(10.3, 11.6, 9.9, 12.4, 11.1, 11.2, 10.1, 10.1, 11.6, 10.9, 12.5, 10.8),
+    stringsAsFactors = FALSE
+  )
+}
+
 # Source modules
 source("modules/logging.R")
 source("modules/log_viewer.R")
@@ -37,6 +55,8 @@ shinyServer(function(input, output, session) {
   })
   
   default_limits <- load_test_limits()
+  hot_seed <- reactiveVal(default_hot_input())
+  last_hot_log_key <- reactiveVal(NULL)
   
   
   create_test_input_observer(input, session, default_limits)
@@ -58,8 +78,21 @@ shinyServer(function(input, output, session) {
     if (!is.null(input$hot)) {
       hot_data <- hot_to_r(input$hot)
       valid_count <- if (!is.null(hot_data)) sum(!is.na(hot_data$X) & !is.na(hot_data$Y), na.rm = TRUE) else 0
-      log_user_interaction("DATA_ENTERED", "hot", paste("Valid data pairs:", valid_count), session_id)
+      row_count <- if (!is.null(hot_data)) nrow(hot_data) else 0
+      log_key <- paste(valid_count, row_count)
+      if (!identical(last_hot_log_key(), log_key)) {
+        log_user_interaction("DATA_ENTERED", "hot", paste("Valid data pairs:", valid_count), session_id)
+        last_hot_log_key(log_key)
+      }
     }
+  })
+
+  observeEvent(input$load_sample, {
+    hot_seed(sample_hot_input())
+  })
+
+  observeEvent(input$reset_hot, {
+    hot_seed(default_hot_input())
   })
   
   test_name <- create_test_name_reactive(input)
@@ -100,7 +133,6 @@ shinyServer(function(input, output, session) {
     if (!is.null(snapshot$expirationInput)) updateTextInput(session, "expirationInput", value = snapshot$expirationInput)
     
     # HOT table
-    # HOT table
     if (!is.null(snapshot$hot$params$data)) {
       raw_data <- snapshot$hot$params$data
       
@@ -109,20 +141,15 @@ shinyServer(function(input, output, session) {
         unlist(clean_row, use.names = FALSE)
       })
       
-      rows <- Filter(function(r) length(r) == 7, rows)
+      rows <- Filter(function(r) length(r) >= 3, rows)
       
       if (length(rows) > 0) {
-        df <- do.call(rbind, rows)
-        df <- as.data.frame(df, stringsAsFactors = FALSE)
-        colnames(df) <- c("Sample", "X", "Y", "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")
-        
+        df <- as.data.frame(do.call(rbind, rows), stringsAsFactors = FALSE)
+        df <- df[, 1:3, drop = FALSE]
+        colnames(df) <- c("Sample", "X", "Y")
         df$X <- as.numeric(df$X)
         df$Y <- as.numeric(df$Y)
-        df$Abs_Diff <- as.numeric(df$Abs_Diff)
-        df$Per_Diff <- as.numeric(df$Per_Diff)
-        df$Limit_per <- as.numeric(df$Limit_per)
-        
-        vals$final_data <- df
+        hot_seed(df)
       } else {
         showNotification("No valid HOT rows after cleanup", type = "warning")
       }
@@ -188,22 +215,14 @@ shinyServer(function(input, output, session) {
 
 
   output$hot <- renderRHandsontable({
-    # Always show a table structure for data entry
-    a <- processed_data()
+    # Render from seed only to avoid edit->rerender feedback loops.
+    a <- hot_seed()
     m <- method_names()
-    required_cols <- c("Sample", "X", "Y", "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")
+    required_cols <- c("Sample", "X", "Y")
     
-    # If no processed data, create default table structure
+    # If no seed data, create default table structure
     if (is.null(a) || nrow(a) == 0 || !all(required_cols %in% names(a))) {
-      a <- data.frame(
-        'Sample' = rep(NA_character_, 10),
-        'X' = rep(NA_real_, 10),
-        'Y' = rep(NA_real_, 10),
-        'Abs_Diff' = rep(NA_real_, 10),
-        'Per_Diff' = rep(NA_real_, 10),
-        'Pass_Fail' = rep(NA_character_, 10),
-        'Limit_per' = rep(0.15, 10)
-      )
+      a <- default_hot_input()
     }
 
     # Enforce stable schema before applying HOT column formatting.
@@ -212,7 +231,7 @@ shinyServer(function(input, output, session) {
     rhandsontable(a
                   , height = 482
                   , rowHeaders = NULL
-                  , colHeaders = c("Sample", m$m1, m$m2, "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")) %>%
+                  , colHeaders = c("Sample", m$m1, m$m2)) %>%
       hot_col(col = 1) %>%
       hot_col(col = 2, format = '0.00', type = 'numeric') %>%
       hot_col(col = 3, format = '0.00', type = 'numeric') %>%
