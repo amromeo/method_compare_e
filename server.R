@@ -142,6 +142,13 @@ shinyServer(function(input, output, session) {
            "mil2-mil3"  = list(m1 = "mil2", m2 = "mil3"),
            list(m1 = "method1", m2 = "method2"))
   })
+
+  label_xy_columns <- function(df, m) {
+    if (is.null(df) || nrow(df) == 0) return(df)
+    if ("X" %in% names(df)) names(df)[names(df) == "X"] <- m$m1
+    if ("Y" %in% names(df)) names(df)[names(df) == "Y"] <- m$m2
+    df
+  }
   
   
   # Create clear reactive data pipeline
@@ -172,7 +179,7 @@ shinyServer(function(input, output, session) {
   
 
   output$kableTable <- renderText({
-    df <- mod_data()  
+    df <- label_xy_columns(mod_data(), method_names())
     tableHTML<-generateKableTable(df, format = "html") 
     tableHTML
     
@@ -183,6 +190,7 @@ shinyServer(function(input, output, session) {
   output$hot <- renderRHandsontable({
     # Always show a table structure for data entry
     a <- processed_data()
+    m <- method_names()
     
     # If no processed data, create default table structure
     if (is.null(a) || nrow(a) == 0) {
@@ -198,7 +206,8 @@ shinyServer(function(input, output, session) {
     } 
     rhandsontable(a
                   , height = 482
-                  , rowHeaders = NULL) %>%
+                  , rowHeaders = NULL
+                  , colHeaders = c("Sample", m$m1, m$m2, "Abs_Diff", "Per_Diff", "Pass_Fail", "Limit_per")) %>%
       hot_col(col = colnames(a)[1]) %>%
       hot_col(col = colnames(a)[2], format = '0.00', type = 'numeric') %>%
       hot_col(col = colnames(a)[3], format = '0.00', type = 'numeric') %>%

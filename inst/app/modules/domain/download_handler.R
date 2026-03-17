@@ -21,6 +21,12 @@ prepare_report_params <- function(input, analysis_data_reactive, display_data_re
   display_data <- display_data_reactive()
   analysis_data <- analysis_data_reactive()
   m <- method_names()
+
+  # Keep internal math on X/Y but label report tables with selected method names.
+  if (!is.null(display_data) && nrow(display_data) > 0) {
+    if ("X" %in% names(display_data)) names(display_data)[names(display_data) == "X"] <- m$m1
+    if ("Y" %in% names(display_data)) names(display_data)[names(display_data) == "Y"] <- m$m2
+  }
   
   list(
     tabledata = display_data,
